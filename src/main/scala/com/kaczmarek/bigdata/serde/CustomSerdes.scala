@@ -3,7 +3,7 @@ package com.kaczmarek.bigdata.serde
 import com.kaczmarek.bigdata.model._
 import org.apache.kafka.common.serialization.Serde
 
-object CustomSerdes extends AnyRef {
+object CustomSerdes {
 
     implicit val movieRatingUserAggregateKey: Serde[MovieRatingUserAggregateKey] = serde()
     implicit val movieRatingUserAggregateValue: Serde[MovieRatingUserAggregateValue] = serde()
