@@ -5,6 +5,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{IntegerDeserializer, StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.test.{ConsumerRecordFactory, OutputVerifier}
 import org.apache.kafka.streams.{StreamsConfig, TopologyTestDriver}
+import org.junit.jupiter.api.{AfterEach, BeforeEach}
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
@@ -24,15 +25,17 @@ class KafkaTopologyCreatorTest {
 
         // given
         val testDriver = createTestDriver()
-        pipeInput(testDriver, KafkaTopologyCreator.MOVIE_RATING_VOTES_TOPIC, votesInputStream)
         pipeInput(testDriver, KafkaTopologyCreator.MOVIE_TITLES_TOPIC, titlesInputStream)
+        pipeInput(testDriver, KafkaTopologyCreator.MOVIE_RATING_VOTES_TOPIC, votesInputStream)
 
         // when
         // then
-        readLines(expectedInputStream)
-            .foreach(line => verifyOutput(testDriver, line))
-
-        testDriver.close()
+        try {
+            readLines(expectedInputStream)
+                .foreach(line => verifyOutput(testDriver, line))
+        } finally {
+            testDriver.close()
+        }
     }
 
     private def createTestDriver(): TopologyTestDriver = {
@@ -64,9 +67,9 @@ class KafkaTopologyCreatorTest {
         val stringSerializer = new StringSerializer
         val consumerRecordFactory = new ConsumerRecordFactory[String, String](
             topic, stringSerializer, stringSerializer)
-        readLines(inputStream)
+        val records = readLines(inputStream)
             .map(line => consumerRecordFactory.create(line))
-            .foreach(testDriver.pipeInput)
+        testDriver.pipeInput(records.asJava)
     }
 
     private def verifyOutput(testDriver: TopologyTestDriver, line: String): Unit = {

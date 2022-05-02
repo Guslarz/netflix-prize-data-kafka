@@ -25,43 +25,40 @@ object KafkaTopologyCreator {
         val movieRatingVoteParser = new MovieRatingVoteParser
 
         val movieRatingVotesStream: KStream[String, MovieRatingVote] = builder
-            .stream[String, String](MOVIE_RATING_VOTES_TOPIC)(Consumed
+            .stream(MOVIE_RATING_VOTES_TOPIC)(Consumed
                 .`with`(Serdes.String, Serdes.String)
                 .withTimestampExtractor(new VoteTimestampExtractor))
             .flatMapValues(value => movieRatingVoteParser.tryParse(value).toIterable)
 
         val movieRatingVoteUserAggregatesTable:
             KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] = movieRatingVotesStream
-            .map[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue](
-                new MovieRatingToMovieRatingUserAggregateMapper)
+            .map(new MovieRatingToMovieRatingUserAggregateMapper)
             .groupByKey
             .reduce(new MovieRatingUserAggregateReducer)
 
         val movieRatingVoteAggregatesTable:
             KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] = movieRatingVoteUserAggregatesTable
             .toStream
-            .map[MovieRatingAggregateKey, MovieRatingAggregateValue](
-                new MovieRatingUserAggregateToMovieRatingAggregateMapper)
+            .map(new MovieRatingUserAggregateToMovieRatingAggregateMapper)
             .groupByKey
             .reduce(new MovieRatingAggregateReducer)
 
         val movieRatingResultsWithoutTitleStream: KStream[Int, MovieRatingResultWithoutTitle] =
             movieRatingVoteAggregatesTable.toStream
-                .map[Int, MovieRatingResultWithoutTitle](
-                    new MovieRatingAggregateToMovieRatingResultWithoutTitleMapper)
+                .map(new MovieRatingAggregateToMovieRatingResultWithoutTitleMapper)
 
         val moviesStream: KStream[String, Movie] = builder
             .stream[String, String](MOVIE_TITLES_TOPIC)
             .flatMapValues(value => movieParser.tryParse(value).toIterable)
 
         val movieTitlesTable: KTable[Int, String] = moviesStream
-            .map[Int, String](new MovieToMovieTitleMapper)
+            .map(new MovieToMovieTitleMapper)
             .groupByKey
             .reduce(new NoOpReducer[String])
 
         movieRatingResultsWithoutTitleStream
-            .join[String, MovieRatingResult](movieTitlesTable)(new MovieRatingResultJoiner)
-            .mapValues[String](new MovieRatingResultToCsvMapper) // TODO remove
+            .join(movieTitlesTable)(new MovieRatingResultJoiner)
+            .mapValues(new MovieRatingResultToCsvMapper) // TODO remove
             .to(ETL_RESULT_TOPIC)
 
         builder.build()
