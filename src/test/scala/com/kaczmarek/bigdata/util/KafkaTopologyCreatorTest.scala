@@ -1,11 +1,11 @@
 package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model.{MovieRatingResult, Params}
+import com.kaczmarek.bigdata.serde.ObjectDeserializer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.{IntegerDeserializer, StringDeserializer, StringSerializer}
+import org.apache.kafka.common.serialization.{IntegerDeserializer, StringSerializer}
 import org.apache.kafka.streams.test.{ConsumerRecordFactory, OutputVerifier}
 import org.apache.kafka.streams.{StreamsConfig, TopologyTestDriver}
-import org.junit.jupiter.api.{AfterEach, BeforeEach}
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
@@ -75,11 +75,18 @@ class KafkaTopologyCreatorTest {
     private def verifyOutput(testDriver: TopologyTestDriver, line: String): Unit = {
         val values = line.split(',')
         val expectedKey: Integer = values(0).toInt
-        val expectedValue: String = values.tail.mkString(",")
-        val outputRecord: ProducerRecord[Integer, String] = testDriver.readOutput(
+        val expectedValue = MovieRatingResult(
+            year = values(1).toInt,
+            month = values(2).toInt,
+            title = values(3),
+            voteCount = values(4).toInt,
+            ratingSum = values(5).toInt,
+            uniqueVoterCount = values(6).toInt
+        )
+        val outputRecord: ProducerRecord[Integer, MovieRatingResult] = testDriver.readOutput(
             KafkaTopologyCreator.ETL_RESULT_TOPIC,
             new IntegerDeserializer,
-            new StringDeserializer
+            new ObjectDeserializer[MovieRatingResult]
         )
         OutputVerifier.compareKeyValue(outputRecord, expectedKey, expectedValue)
     }

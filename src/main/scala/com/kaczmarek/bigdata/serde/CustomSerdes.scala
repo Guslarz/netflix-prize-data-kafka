@@ -10,6 +10,7 @@ object CustomSerdes extends AnyRef {
     implicit val movieRatingAggregateKey: Serde[MovieRatingAggregateKey] = serde()
     implicit val movieRatingAggregateValue: Serde[MovieRatingAggregateValue] = serde()
     implicit val movieRatingResultWithoutTitle: Serde[MovieRatingResultWithoutTitle] = serde()
+    implicit val movieRatingResult: Serde[MovieRatingResult] = serde()
 
     private def serde[T](): Serde[T] = {
         new ObjectSerde[T]

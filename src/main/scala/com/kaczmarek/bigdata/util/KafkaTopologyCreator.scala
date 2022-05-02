@@ -5,11 +5,11 @@ import com.kaczmarek.bigdata.mapper._
 import com.kaczmarek.bigdata.model._
 import com.kaczmarek.bigdata.parser.{MovieParser, MovieRatingVoteParser}
 import com.kaczmarek.bigdata.reducer.{MovieRatingAggregateReducer, MovieRatingUserAggregateReducer, NoOpReducer}
+import com.kaczmarek.bigdata.serde.CustomSerdes._
 import com.kaczmarek.bigdata.timestamp.VoteTimestampExtractor
 import org.apache.kafka.streams.Topology
 import org.apache.kafka.streams.scala.ImplicitConversions._
 import org.apache.kafka.streams.scala.Serdes._
-import com.kaczmarek.bigdata.serde.CustomSerdes._
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.scala.{Serdes, StreamsBuilder}
 
@@ -58,7 +58,6 @@ object KafkaTopologyCreator {
 
         movieRatingResultsWithoutTitleStream
             .join(movieTitlesTable)(new MovieRatingResultJoiner)
-            .mapValues(new MovieRatingResultToCsvMapper) // TODO remove
             .to(ETL_RESULT_TOPIC)
 
         builder.build()
