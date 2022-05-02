@@ -1,9 +1,9 @@
-package com.kaczmarek.bigdata.mapper
+package com.kaczmarek.bigdata.operator.selector
 
 import com.kaczmarek.bigdata.model.{MovieRatingAggregateKey, MovieRatingAggregateValue, MovieRatingUserAggregateKey, MovieRatingUserAggregateValue}
 import org.slf4j.LoggerFactory
 
-class MovieRatingUserAggregateToMovieRatingAggregateMapper
+class MovieRatingAggregateSelector
     extends ((MovieRatingUserAggregateKey, MovieRatingUserAggregateValue) =>
         (MovieRatingAggregateKey, MovieRatingAggregateValue)) {
 

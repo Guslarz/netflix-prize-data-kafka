@@ -1,4 +1,4 @@
-package com.kaczmarek.bigdata.reducer
+package com.kaczmarek.bigdata.operator.reducer
 
 import org.slf4j.LoggerFactory
 

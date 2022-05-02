@@ -4,7 +4,7 @@ import com.kaczmarek.bigdata.parser.MovieRatingVoteParser
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.streams.processor.TimestampExtractor
 
-class VoteTimestampExtractor extends TimestampExtractor {
+class MovieRatingVoteTimestampExtractor extends TimestampExtractor {
 
     private val movieRatingVoteParser = new MovieRatingVoteParser
 

@@ -4,8 +4,10 @@ import com.kaczmarek.bigdata.model.{MovieRatingResult, Params}
 import com.kaczmarek.bigdata.serde.ObjectDeserializer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{IntegerDeserializer, StringSerializer}
+import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.test.{ConsumerRecordFactory, OutputVerifier}
 import org.apache.kafka.streams.{StreamsConfig, TopologyTestDriver}
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
@@ -83,12 +85,9 @@ class KafkaTopologyCreatorTest {
             ratingSum = values(5).toInt,
             uniqueVoterCount = values(6).toInt
         )
-        val outputRecord: ProducerRecord[Integer, MovieRatingResult] = testDriver.readOutput(
-            KafkaTopologyCreator.ETL_RESULT_TOPIC,
-            new IntegerDeserializer,
-            new ObjectDeserializer[MovieRatingResult]
-        )
-        OutputVerifier.compareKeyValue(outputRecord, expectedKey, expectedValue)
+        val store: KeyValueStore[Int, MovieRatingResult] =
+            testDriver.getKeyValueStore(KafkaTopologyCreator.ETL_RESULT_STORE)
+        assertEquals(expectedValue, store.get(expectedKey))
     }
 }
 

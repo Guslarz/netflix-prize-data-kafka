@@ -1,4 +1,4 @@
-package com.kaczmarek.bigdata.mapper
+package com.kaczmarek.bigdata.operator.mapper
 
 import com.kaczmarek.bigdata.model.Movie
 import org.slf4j.LoggerFactory

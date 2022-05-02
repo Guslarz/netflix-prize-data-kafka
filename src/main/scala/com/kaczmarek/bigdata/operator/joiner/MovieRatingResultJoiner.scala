@@ -1,4 +1,4 @@
-package com.kaczmarek.bigdata.joiner
+package com.kaczmarek.bigdata.operator.joiner
 
 import com.kaczmarek.bigdata.model.{MovieRatingResult, MovieRatingResultWithoutTitle}
 

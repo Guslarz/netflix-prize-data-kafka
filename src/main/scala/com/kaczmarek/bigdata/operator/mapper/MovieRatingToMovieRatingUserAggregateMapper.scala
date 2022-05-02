@@ -1,4 +1,4 @@
-package com.kaczmarek.bigdata.mapper
+package com.kaczmarek.bigdata.operator.mapper
 
 import com.kaczmarek.bigdata.model.{MovieRatingUserAggregateKey, MovieRatingUserAggregateValue, MovieRatingVote}
 import com.kaczmarek.bigdata.util.DateUtils
