@@ -33,8 +33,11 @@ class KafkaTopologyCreatorTest {
         // when
         // then
         try {
+//            testDriver.advanceWallClockTime(1000 * 60 * 60 *10)
+            val etlResultStore: KeyValueStore[Int, MovieRatingResult] =
+                testDriver.getKeyValueStore(KafkaTopologyCreator.ETL_RESULT_STORE)
             readLines(expectedInputStream)
-                .foreach(line => verifyOutput(testDriver, line))
+                .foreach(line => verifyOutput(etlResultStore, line))
         } finally {
             testDriver.close()
         }
@@ -55,9 +58,9 @@ class KafkaTopologyCreatorTest {
     }
 
     private def createParams(): Params = Params(
-        d = 1,
-        l = 1,
-        o = 1
+        anomalyWindowDuration = 30,
+        anomalyMinimumVoteCount = 100,
+        anomalyMinimumRatingAverage = 4.0
     )
 
     private def readLines(inputStream: InputStream): List[String] = Source
@@ -74,7 +77,7 @@ class KafkaTopologyCreatorTest {
         testDriver.pipeInput(records.asJava)
     }
 
-    private def verifyOutput(testDriver: TopologyTestDriver, line: String): Unit = {
+    private def verifyOutput(store: KeyValueStore[Int, MovieRatingResult], line: String): Unit = {
         val values = line.split(',')
         val expectedKey: Integer = values(0).toInt
         val expectedValue = MovieRatingResult(
@@ -85,15 +88,13 @@ class KafkaTopologyCreatorTest {
             ratingSum = values(5).toInt,
             uniqueVoterCount = values(6).toInt
         )
-        val store: KeyValueStore[Int, MovieRatingResult] =
-            testDriver.getKeyValueStore(KafkaTopologyCreator.ETL_RESULT_STORE)
         assertEquals(expectedValue, store.get(expectedKey))
     }
 }
 
 object KafkaTopologyCreatorTest {
 
-    def getTopologyTestFiles(): java.util.stream.Stream[Arguments] = {
+    def getTopologyTestFiles: java.util.stream.Stream[Arguments] = {
         Stream.iterate(0)(_ + 1)
             .map(i => List(
                 s"input-votes${i}.txt",

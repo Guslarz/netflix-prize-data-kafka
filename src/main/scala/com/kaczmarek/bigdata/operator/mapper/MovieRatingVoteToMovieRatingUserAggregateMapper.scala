@@ -3,7 +3,7 @@ package com.kaczmarek.bigdata.operator.mapper
 import com.kaczmarek.bigdata.model.{MovieRatingUserAggregateKey, MovieRatingUserAggregateValue, MovieRatingVote}
 import com.kaczmarek.bigdata.util.DateUtils
 
-class MovieRatingToMovieRatingUserAggregateMapper
+class MovieRatingVoteToMovieRatingUserAggregateMapper
     extends ((String, MovieRatingVote) => (MovieRatingUserAggregateKey, MovieRatingUserAggregateValue)) {
 
     override def apply(key: String, vote: MovieRatingVote):
