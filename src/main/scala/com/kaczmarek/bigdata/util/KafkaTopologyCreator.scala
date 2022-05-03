@@ -1,7 +1,7 @@
 package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model._
-import com.kaczmarek.bigdata.operator.filter.{AnomalyFilter, NonNullFilter}
+import com.kaczmarek.bigdata.operator.filter.AnomalyFilter
 import com.kaczmarek.bigdata.operator.joiner.{AnomalyResultJoiner, MovieRatingResultJoiner}
 import com.kaczmarek.bigdata.operator.mapper._
 import com.kaczmarek.bigdata.operator.reducer.{AnomalyAggregateReducer, MovieRatingReducer, MovieRatingUserAggregateReducer, NoOpReducer}

@@ -36,7 +36,6 @@ class KafkaTopologyCreatorTest {
         // then
         try {
             verifyEtlOutput(testDriver, expectedEtlInputStream)
-            testDriver.advanceWallClockTime(1000 * 60 * 60 * 24 * 2)
             verifyAnomalyOutput(testDriver, expectedAnomalyInputStream)
         } finally {
             testDriver.close()
