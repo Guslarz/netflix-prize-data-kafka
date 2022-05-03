@@ -18,6 +18,7 @@ object NetflixPrizeDataKafka {
         val topology: Topology = KafkaTopologyCreator.createTopology(params)
         val config: Properties = KafkaConfigCreator.createConfig(params)
 
+        logger.info("{}", params)
         logger.info("{}", topology.describe())
 
         //        KafkaRunner.run(topology, config)
