@@ -24,7 +24,7 @@ object KafkaTopologyCreator {
     val MOVIE_RATING_VOTES_TOPIC: String = "movie-rating-votes"
     val MOVIE_TITLES_TOPIC: String = "movie-titles"
     val ETL_RESULT_STORE: String = "movie-ratings"
-    val ANOMALY_RESULT_STORE: String = "movie-anomalies"
+    val ANOMALY_RESULT_TOPIC: String = "movie-anomalies"
 
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
@@ -76,21 +76,18 @@ object KafkaTopologyCreator {
             .reduce(new AnomalyAggregateReducer)(Materialized.`with`(Serdes.Integer, CustomSerdes.anomalyAggregate)
                 .withRetention(Duration.ofDays(params.anomalyWindowDuration + 1)))
 
-        val anomalyResultsWithoutTitleTable: KTable[Windowed[Int], AnomalyResultWithoutTitle] = anomalyAggregateTable
+        val anomalyResultsWithoutTitleTable: KStream[Windowed[Int], AnomalyResultWithoutTitle] = anomalyAggregateTable
+            .toStream
             .mapValues(new AnomalyAggregateToAnomalyResultWithoutTitleMapper)
             .filter(new AnomalyFilter(params))
 
         val anomalyJoinedResults: KStream[Int, AnomalyJoinedResult] = anomalyResultsWithoutTitleTable
-            .toStream
-            .filter(new NonNullFilter[Windowed[Int], AnomalyResultWithoutTitle])
             .map(new AnomalyResultWithoutTitleToAnomalyJoinableResultMapper)
             .join(movieTitlesTable)(new AnomalyResultJoiner)
 
         anomalyJoinedResults
             .map(new AnomalyJoinedResultToAnomalyResultMapper)
-            .groupByKey
-            .reduce(new NoOpReducer[AnomalyResultValue])(Materialized
-                .as(ANOMALY_RESULT_STORE))
+            .to(ANOMALY_RESULT_TOPIC)
 
         builder.build()
     }
