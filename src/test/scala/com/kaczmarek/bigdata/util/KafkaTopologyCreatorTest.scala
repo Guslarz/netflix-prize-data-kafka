@@ -98,12 +98,13 @@ class KafkaTopologyCreatorTest {
     }
 
     private def verifyAnomalyOutput(testDriver: TopologyTestDriver, expectedInputStream: InputStream): Unit = {
+        val anomalyResultStore: KeyValueStore[AnomalyResultKey, AnomalyResultValue] =
+            testDriver.getKeyValueStore(KafkaTopologyCreator.ANOMALY_RESULT_STORE)
         readLines(expectedInputStream)
-            .foreach(line => verifyAnomalyRecord(testDriver, line))
-        assertNull(testDriver.readOutput(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC))
+            .foreach(line => verifyAnomalyRecord(anomalyResultStore, line))
     }
 
-    private def verifyAnomalyRecord(testDriver: TopologyTestDriver, line: String): Unit = {
+    private def verifyAnomalyRecord(store: KeyValueStore[AnomalyResultKey, AnomalyResultValue], line: String): Unit = {
         val values = line.split(',')
         val expectedKey = AnomalyResultKey(
             movieId = values(0).toInt,
@@ -115,10 +116,7 @@ class KafkaTopologyCreatorTest {
             voteCount = values(4).toInt,
             ratingAverage = values(5).toDouble
         )
-        val record: ProducerRecord[AnomalyResultKey, AnomalyResultValue] =
-            testDriver.readOutput(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC,
-                new ObjectDeserializer[AnomalyResultKey], new ObjectDeserializer[AnomalyResultValue])
-        OutputVerifier.compareKeyValue(record, expectedKey, expectedValue)
+        assertEquals(expectedValue, store.get(expectedKey))
     }
 }
 

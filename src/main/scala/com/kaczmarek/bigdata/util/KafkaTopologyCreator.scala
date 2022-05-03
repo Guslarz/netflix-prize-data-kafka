@@ -24,7 +24,7 @@ object KafkaTopologyCreator {
     val MOVIE_RATING_VOTES_TOPIC: String = "movie-rating-votes"
     val MOVIE_TITLES_TOPIC: String = "movie-titles"
     val ETL_RESULT_STORE: String = "movie-ratings"
-    val ANOMALY_RESULT_TOPIC: String = "movie-anomalies"
+    val ANOMALY_RESULT_STORE: String = "movie-anomalies"
 
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
@@ -87,7 +87,9 @@ object KafkaTopologyCreator {
 
         anomalyJoinedResults
             .map(new AnomalyJoinedResultToAnomalyResultMapper)
-            .to(ANOMALY_RESULT_TOPIC)
+            .groupByKey
+            .reduce(new NoOpReducer[AnomalyResultValue])(Materialized
+                .as(ANOMALY_RESULT_STORE))
 
         builder.build()
     }
