@@ -1,0 +1,17 @@
+CLUSTER_NAME=<dowolna_nazwa_nowego_klastra>
+BUCKET_NAME=<nazwa_używanego_zasobnika>
+PROJECT_ID=<identyfikator_twojego_projektu>
+REGION=<jeden_z_regionow_z_których_dostępny_jest_twój_zasobnik>
+ZONE=${REGION}-<litera_strefy_zwykle_a_b_lub_c>
+gcloud beta dataproc clusters create ${CLUSTER_NAME} \
+    --enable-component-gateway --bucket ${BUCKET_NAME} \
+    --region ${REGION} --subnet default --zone ${ZONE} \
+    --master-machine-type n1-standard-2 --master-boot-disk-size 50 \
+    --num-workers 2 \
+    --worker-machine-type n1-standard-2 --worker-boot-disk-size 50 \
+    --image-version 2.0-debian10 \
+    --optional-components ZOOKEEPER \
+    --project ${PROJECT_ID} --max-age=3h \
+    --metadata "run-on-master=true" \
+    --initialization-actions \
+    gs://goog-dataproc-initialization-actions-${REGION}/kafka/kafka.sh

@@ -1,13 +1,11 @@
 package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model.{AnomalyResultKey, AnomalyResultValue, MovieRatingResult, Params}
-import com.kaczmarek.bigdata.serde.ObjectDeserializer
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.streams.state.KeyValueStore
-import org.apache.kafka.streams.test.{ConsumerRecordFactory, OutputVerifier}
+import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{StreamsConfig, TopologyTestDriver}
-import org.junit.jupiter.api.Assertions.{assertEquals, assertNull}
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
