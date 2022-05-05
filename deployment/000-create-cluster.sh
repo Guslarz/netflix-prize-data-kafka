@@ -1,8 +1,13 @@
-CLUSTER_NAME=<dowolna_nazwa_nowego_klastra>
-BUCKET_NAME=<nazwa_używanego_zasobnika>
-PROJECT_ID=<identyfikator_twojego_projektu>
-REGION=<jeden_z_regionow_z_których_dostępny_jest_twój_zasobnik>
-ZONE=${REGION}-<litera_strefy_zwykle_a_b_lub_c>
+#!/usr/bin/env bash
+
+# GCLOUD
+
+CLUSTER_NAME=my-cluster
+BUCKET_NAME=guslarz-bucket
+PROJECT_ID=put-big-data-2022-02-sk
+REGION=europe-west4
+ZONE=${REGION}-c
+
 gcloud beta dataproc clusters create ${CLUSTER_NAME} \
     --enable-component-gateway --bucket ${BUCKET_NAME} \
     --region ${REGION} --subnet default --zone ${ZONE} \

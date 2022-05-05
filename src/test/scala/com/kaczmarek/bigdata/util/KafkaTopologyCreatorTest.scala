@@ -1,6 +1,7 @@
 package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model.{AnomalyResultKey, AnomalyResultValue, MovieRatingResult, Params}
+import com.kaczmarek.bigdata.serde.CustomSerdes
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.test.ConsumerRecordFactory
@@ -82,16 +83,10 @@ class KafkaTopologyCreatorTest {
     }
 
     private def verifyEtlRecord(store: KeyValueStore[Int, MovieRatingResult], line: String): Unit = {
-        val values = line.split(',')
+        val values = line.split('\t')
         val expectedKey: Integer = values(0).toInt
-        val expectedValue = MovieRatingResult(
-            year = values(1).toInt,
-            month = values(2).toInt,
-            title = values(3),
-            voteCount = values(4).toInt,
-            ratingSum = values(5).toInt,
-            uniqueVoterCount = values(6).toInt
-        )
+        val expectedValue = CustomSerdes.movieRatingResultJson.deserializer()
+            .deserialize("", values(1).getBytes)
         assertEquals(expectedValue, store.get(expectedKey))
     }
 
@@ -103,17 +98,9 @@ class KafkaTopologyCreatorTest {
     }
 
     private def verifyAnomalyRecord(store: KeyValueStore[AnomalyResultKey, AnomalyResultValue], line: String): Unit = {
-        val values = line.split(',')
-        val expectedKey = AnomalyResultKey(
-            movieId = values(0).toInt,
-            windowStart = values(1),
-            windowEnd = values(2)
-        )
-        val expectedValue = AnomalyResultValue(
-            title = values(3),
-            voteCount = values(4).toInt,
-            ratingAverage = values(5).toDouble
-        )
+        val values = line.split('\t')
+        val expectedKey = CustomSerdes.anomalyResultKeyJson.deserializer().deserialize("", values(0).getBytes)
+        val expectedValue = CustomSerdes.anomalyResultValueJson.deserializer().deserialize("", values(1).getBytes)
         assertEquals(expectedValue, store.get(expectedKey))
     }
 }

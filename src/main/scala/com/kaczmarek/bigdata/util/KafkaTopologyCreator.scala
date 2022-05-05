@@ -24,7 +24,7 @@ object KafkaTopologyCreator {
     val MOVIE_RATING_VOTES_TOPIC: String = "movie-rating-votes"
     val MOVIE_TITLES_TOPIC: String = "movie-titles"
     val ETL_RESULT_STORE: String = "movie-ratings"
-    val ANOMALY_RESULT_STORE: String = "movie-anomalies"
+    val ANOMALY_RESULT_STORE: String = "popular-movies"
 
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
@@ -64,7 +64,10 @@ object KafkaTopologyCreator {
 
         movieRatingResultsWithoutTitleTable
             .join(movieTitlesTable, Materialized
-                .as[Int, MovieRatingResult, ByteArrayKeyValueStore](ETL_RESULT_STORE))(new MovieRatingResultJoiner)
+                .as[Int, MovieRatingResult, ByteArrayKeyValueStore]
+                    (ETL_RESULT_STORE)
+                    (Serdes.Integer, CustomSerdes.movieRatingResultJson)
+            )(new MovieRatingResultJoiner)
 
         val anomalyAggregateTable: KTable[Windowed[Int], AnomalyAggregate] = movieRatingVotesStream
             .map(new MovieRatingVoteToAnomalyAggregateMapper)
@@ -89,7 +92,9 @@ object KafkaTopologyCreator {
             .map(new AnomalyJoinedResultToAnomalyResultMapper)
             .groupByKey
             .reduce(new NoOpReducer[AnomalyResultValue])(Materialized
-                .as(ANOMALY_RESULT_STORE))
+                .as(ANOMALY_RESULT_STORE)
+                (CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson)
+            )
 
         builder.build()
     }

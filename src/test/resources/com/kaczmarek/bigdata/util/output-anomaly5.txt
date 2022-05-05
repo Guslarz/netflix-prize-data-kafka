@@ -1,3 +1,3 @@
-2,2022-05-02,2022-05-03,Tytuł2,3,5.0
-2,2022-05-05,2022-05-06,Tytuł2,3,5.0
-2,2022-05-10,2022-05-11,Tytuł2,3,5.0
+{"movieId": 2, "windowStart": "2022-05-02", "windowEnd": "2022-05-03"}	{"title": "Tytuł2", "voteCount": 3, "ratingAverage": 5.0}
+{"movieId": 2, "windowStart": "2022-05-05", "windowEnd": "2022-05-06"}	{"title": "Tytuł2", "voteCount": 3, "ratingAverage": 5.0}
+{"movieId": 2, "windowStart": "2022-05-10", "windowEnd": "2022-05-11"}	{"title": "Tytuł2", "voteCount": 3, "ratingAverage": 5.0}
