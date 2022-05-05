@@ -20,3 +20,9 @@ gcloud beta dataproc clusters create ${CLUSTER_NAME} \
     --metadata "run-on-master=true" \
     --initialization-actions \
     gs://goog-dataproc-initialization-actions-${REGION}/kafka/kafka.sh
+
+# launch 6 terminals
+#   - server terminal
+#   - 2 consumers terminals
+#   - 2 producers terminals
+#   - streaming terminal

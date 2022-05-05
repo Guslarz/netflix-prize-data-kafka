@@ -3,16 +3,6 @@
 # SERVER TERMINAL
 
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
-BUCKET_NAME=guslarz-bucket
-
-
-# download files
-
-hadoop fs -copyToLocal gs://${BUCKET_NAME}/project01/netflix-prize-data-input.zip
-hadoop fs -copyToLocal gs://${BUCKET_NAME}/project01/netflix-prize-data-executables.zip
-
-unzip netflix-prize-data-input.zip
-unzip netflix-prize-data-executables.zip
 
 
 # create topics
