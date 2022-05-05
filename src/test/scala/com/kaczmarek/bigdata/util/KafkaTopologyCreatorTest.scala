@@ -56,6 +56,7 @@ class KafkaTopologyCreatorTest {
     }
 
     private def createParams(): Params = Params(
+        server = "",
         anomalyWindowDuration = 1,
         anomalyMinimumVoteCount = 3,
         anomalyMinimumRatingAverage = 4.0

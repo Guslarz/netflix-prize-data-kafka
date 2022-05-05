@@ -82,7 +82,7 @@
     </dependencies>
 
     <build>
-        <finalName>${artifactId}</finalName>
+        <finalName>${project.artifactId}</finalName>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
         <plugins>
@@ -120,14 +120,30 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>executables</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
+                            <finalName>netflix-prize-data-executables</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <descriptors>
-                                <descriptor>assembly.xml</descriptor>
+                                <descriptor>assembly-executables.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>input</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>nexflix-prize-data-input</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>assembly-input.xml</descriptor>
                             </descriptors>
                         </configuration>
                     </execution>

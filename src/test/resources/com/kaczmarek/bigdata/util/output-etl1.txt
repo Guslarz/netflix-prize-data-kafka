@@ -1,1 +1,1 @@
-1	{"year": 2022, "month": 4, "title": "Tytuł filmu", "voteCount": 2, "ratingSum": 8, "uniqueVoterCount": 2}
+1	{"year": 2022, "month": 4, "title": "Tytul filmu", "voteCount": 2, "ratingSum": 8, "uniqueVoterCount": 2}

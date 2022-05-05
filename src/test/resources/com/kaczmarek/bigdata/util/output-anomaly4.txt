@@ -1,1 +1,1 @@
-{"movieId": 2, "windowStart": "2022-05-02", "windowEnd": "2022-05-03"}	{"title": "Tytuł2", "voteCount": 3, "ratingAverage": 5.0}
+{"movieId": 2, "windowStart": "2022-05-02", "windowEnd": "2022-05-03"}	{"title": "Tytul2", "voteCount": 3, "ratingAverage": 5.0}

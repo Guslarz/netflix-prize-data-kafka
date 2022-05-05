@@ -1,3 +1,3 @@
-1	{"year": 2022, "month": 4, "title": "Tytuł1", "voteCount": 3, "ratingSum": 11, "uniqueVoterCount": 2}
-2	{"year": 2022, "month": 4, "title": "Tytuł2", "voteCount": 3, "ratingSum": 15, "uniqueVoterCount": 1}
-3	{"year": 2022, "month": 4, "title": "Tytuł3", "voteCount": 1, "ratingSum": 5, "uniqueVoterCount": 1}
+1	{"year": 2022, "month": 4, "title": "Tytul1", "voteCount": 3, "ratingSum": 11, "uniqueVoterCount": 2}
+2	{"year": 2022, "month": 4, "title": "Tytul2", "voteCount": 3, "ratingSum": 15, "uniqueVoterCount": 1}
+3	{"year": 2022, "month": 4, "title": "Tytul3", "voteCount": 1, "ratingSum": 5, "uniqueVoterCount": 1}
