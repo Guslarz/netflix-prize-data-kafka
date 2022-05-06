@@ -1,1 +1,1 @@
-1	{"year": 2022, "month": 4, "title": "Tytul filmu", "voteCount": 3, "ratingSum": 11, "uniqueVoterCount": 2}
+{"movieId": 1, "yearMonth": "2022-05"}	{"title": "Tytul filmu", "voteCount": 3, "ratingSum": 11, "uniqueVoterCount": 2}

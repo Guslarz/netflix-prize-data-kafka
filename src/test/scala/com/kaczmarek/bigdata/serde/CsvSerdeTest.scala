@@ -1,12 +1,12 @@
 package com.kaczmarek.bigdata.serde
 
-import com.kaczmarek.bigdata.model.MovieRatingResult
+import com.kaczmarek.bigdata.model.MovieRatingJoinedResult
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.{BeforeEach, Test}
 
 class CsvSerdeTest {
 
-    private var uut: CsvSerde[MovieRatingResult] = _
+    private var uut: CsvSerde[MovieRatingJoinedResult] = _
 
     @BeforeEach
     def setUp(): Unit = {
@@ -16,7 +16,7 @@ class CsvSerdeTest {
     @Test
     def shouldConvertBothWaysWithObject(): Unit = {
         // given
-        val expected = MovieRatingResult(
+        val expected = MovieRatingJoinedResult(
             year = 1,
             month = 2,
             title = "title",

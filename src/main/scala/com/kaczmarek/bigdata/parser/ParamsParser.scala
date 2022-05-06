@@ -11,7 +11,7 @@ class ParamsParser extends AbstractParser[Array[String], Params] {
         anomalyWindowDuration = 30,
         anomalyMinimumVoteCount = 100,
         anomalyMinimumRatingAverage = 4.0
-    ), args.toList.tail)
+    ), args.toList)
 
     @tailrec
     private def parseParam(params: Params, args: List[String]): Params = {

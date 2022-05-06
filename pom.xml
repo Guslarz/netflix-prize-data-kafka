@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>groupId</groupId>
+    <groupId>com.kaczmarek.bigdata</groupId>
     <artifactId>netflix-prize-data-kafka</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -140,7 +140,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <finalName>nexflix-prize-data-input</finalName>
+                            <finalName>netflix-prize-data-input</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <descriptors>
                                 <descriptor>assembly-input.xml</descriptor>

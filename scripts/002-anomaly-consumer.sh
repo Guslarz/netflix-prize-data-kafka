@@ -2,10 +2,13 @@
 
 # SECOND CONSUMER TERMINAL
 
+set -e
+
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 ANOMALY_TOPIC=popular-movies
 
-bin/kafka-console-consumer.sh \
-  --bootstrap-server localhost:6667 \
+/usr/lib/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server ${CLUSTER_NAME}-w-0:9092 \
   --topic $ANOMALY_TOPIC --from-beginning \
   --formatter kafka.tools.DefaultMessageFormatter \
   --property print.key=true \

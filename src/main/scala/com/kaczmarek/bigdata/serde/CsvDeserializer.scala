@@ -1,6 +1,7 @@
 package com.kaczmarek.bigdata.serde
 
 import com.kaczmarek.bigdata.util.DateUtils
+import org.apache.kafka.common.errors.SerializationException
 import org.apache.kafka.common.serialization.Deserializer
 
 import java.util.Date
@@ -9,14 +10,18 @@ import scala.reflect.ClassTag
 class CsvDeserializer[T](implicit private val classTag: ClassTag[T]) extends Deserializer[T] {
 
     override def deserialize(topic: String, bytes: Array[Byte]): T = {
-        val values = new String(bytes)
-            .split(',')
-        val constructor = classTag.runtimeClass.getConstructors.head
-        val paramTypes = constructor.getParameterTypes
-        val params = values
-            .zip(paramTypes)
-            .map(param => convert(param._1, param._2).asInstanceOf[Object])
-        constructor.newInstance(params: _*).asInstanceOf[T]
+        try {
+            val values = new String(bytes)
+                .split(',')
+            val constructor = classTag.runtimeClass.getConstructors.head
+            val paramTypes = constructor.getParameterTypes
+            val params = values
+                .zip(paramTypes)
+                .map(param => convert(param._1, param._2).asInstanceOf[Object])
+            constructor.newInstance(params: _*).asInstanceOf[T]
+        } catch {
+            case e: Exception => throw new SerializationException("Failed to deserialize", e)
+        }
     }
 
     private def convert(value: String, cls: Class[_]): Any = {

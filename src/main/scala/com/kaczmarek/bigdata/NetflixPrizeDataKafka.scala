@@ -1,12 +1,12 @@
 package com.kaczmarek.bigdata
 
+import com.kaczmarek.bigdata.model.Params
+import com.kaczmarek.bigdata.parser.ParamsParser
+import com.kaczmarek.bigdata.util.{KafkaConfigCreator, KafkaRunner, KafkaTopologyCreator}
 import org.apache.kafka.streams.Topology
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.Properties
-import com.kaczmarek.bigdata.model.Params
-import com.kaczmarek.bigdata.parser.ParamsParser
-import com.kaczmarek.bigdata.util.{KafkaConfigCreator, KafkaTopologyCreator}
 
 object NetflixPrizeDataKafka {
 
@@ -21,6 +21,6 @@ object NetflixPrizeDataKafka {
         logger.info("{}", params)
         logger.info("{}", topology.describe())
 
-        //        KafkaRunner.run(topology, config)
+        KafkaRunner.run(topology, config)
     }
 }

@@ -2,6 +2,8 @@
 
 # SERVER TERMINAL
 
+set -e
+
 BUCKET_NAME=guslarz-bucket
 
 

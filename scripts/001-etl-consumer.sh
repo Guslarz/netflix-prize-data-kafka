@@ -2,10 +2,13 @@
 
 # FIRST CONSUMER TERMINAL
 
+set -e
+
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 ETL_TOPIC=movie-ratings
 
-bin/kafka-console-consumer.sh \
-  --bootstrap-server localhost:6667 \
+/usr/lib/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server ${CLUSTER_NAME}-w-0:9092 \
   --topic $ETL_TOPIC --from-beginning \
   --formatter kafka.tools.DefaultMessageFormatter \
   --property print.key=true \

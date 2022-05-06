@@ -2,6 +2,8 @@
 
 # GCLOUD
 
+set -e
+
 CLUSTER_NAME=my-cluster
 BUCKET_NAME=guslarz-bucket
 PROJECT_ID=put-big-data-2022-02-sk
@@ -15,14 +17,14 @@ gcloud beta dataproc clusters create ${CLUSTER_NAME} \
     --num-workers 2 \
     --worker-machine-type n1-standard-2 --worker-boot-disk-size 50 \
     --image-version 2.0-debian10 \
-    --optional-components ZOOKEEPER \
+    --optional-components ZEPPELIN,ZOOKEEPER \
     --project ${PROJECT_ID} --max-age=3h \
     --metadata "run-on-master=true" \
     --initialization-actions \
     gs://goog-dataproc-initialization-actions-${REGION}/kafka/kafka.sh
 
-# launch 6 terminals
+# launch 5 terminals
 #   - server terminal
 #   - 2 consumers terminals
-#   - 2 producers terminals
+#   - producer terminal
 #   - streaming terminal

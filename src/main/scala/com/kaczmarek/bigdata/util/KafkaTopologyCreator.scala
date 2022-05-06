@@ -14,7 +14,7 @@ import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala.ImplicitConversions._
 import org.apache.kafka.streams.scala.Serdes._
 import org.apache.kafka.streams.scala.kstream._
-import org.apache.kafka.streams.scala.{ByteArrayKeyValueStore, Serdes, StreamsBuilder}
+import org.apache.kafka.streams.scala.{Serdes, StreamsBuilder}
 
 import java.time.Duration
 
@@ -22,8 +22,8 @@ object KafkaTopologyCreator {
 
     val MOVIE_RATING_VOTES_TOPIC: String = "movie-rating-votes"
     val MOVIE_TITLES_TOPIC: String = "movie-titles"
-    val ETL_RESULT_STORE: String = "movie-ratings"
-    val ANOMALY_RESULT_STORE: String = "popular-movies"
+    val ETL_RESULT_TOPIC: String = "movie-ratings"
+    val ANOMALY_RESULT_TOPIC: String = "popular-movies"
 
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
@@ -44,11 +44,6 @@ object KafkaTopologyCreator {
             .groupBy(new MovieRatingAggregateSelector)
             .reduce(MovieRatingReducer.adder, MovieRatingReducer.subtractor)
 
-        val movieRatingResultsWithoutTitleTable: KTable[Int, MovieRatingResultWithoutTitle] =
-            movieRatingVoteAggregatesTable
-                .groupBy(new MovieRatingAggregateToMovieRatingResultWithoutTitleMapper)
-                .reduce(new NoOpReducer[MovieRatingResultWithoutTitle], new NoOpReducer[MovieRatingResultWithoutTitle])
-
         val moviesStream: KStream[String, Movie] = builder
             .stream(MOVIE_TITLES_TOPIC)(Consumed
                 .`with`(Serdes.String, CustomSerdes.movieInput))
@@ -58,12 +53,18 @@ object KafkaTopologyCreator {
             .groupByKey
             .reduce(new NoOpReducer[String])
 
-        movieRatingResultsWithoutTitleTable
-            .join(movieTitlesTable, Materialized
-                .as[Int, MovieRatingResult, ByteArrayKeyValueStore]
-                    (ETL_RESULT_STORE)
-                    (Serdes.Integer, CustomSerdes.movieRatingResultJson)
-            )(new MovieRatingResultJoiner)
+        val movieRatingResultsWithoutTitleStream: KStream[Int, MovieRatingResultWithoutTitle] =
+            movieRatingVoteAggregatesTable
+                .toStream
+                .map(new MovieRatingAggregateToMovieRatingResultWithoutTitleMapper)
+
+        val movieRatingJoinedResultsStream: KStream[Int, MovieRatingJoinedResult] = movieRatingResultsWithoutTitleStream
+            .join(movieTitlesTable)(new MovieRatingResultJoiner)
+
+        movieRatingJoinedResultsStream
+            .map(new MovieRatingJoinedResultToMovieRatingResultMapper)
+            .to(ETL_RESULT_TOPIC)(Produced.
+                `with`(CustomSerdes.movieRatingResultKeyJson, CustomSerdes.movieRatingResultValueJson))
 
         val anomalyAggregateTable: KTable[Windowed[Int], AnomalyAggregate] = movieRatingVotesStream
             .map(new MovieRatingVoteToAnomalyAggregateMapper)
@@ -75,22 +76,19 @@ object KafkaTopologyCreator {
             .reduce(new AnomalyAggregateReducer)(Materialized.`with`(Serdes.Integer, CustomSerdes.anomalyAggregate)
                 .withRetention(Duration.ofDays(params.anomalyWindowDuration + 1)))
 
-        val anomalyResultsWithoutTitleTable: KStream[Windowed[Int], AnomalyResultWithoutTitle] = anomalyAggregateTable
+        val anomalyResultsWithoutTitleStream: KStream[Windowed[Int], AnomalyResultWithoutTitle] = anomalyAggregateTable
             .toStream
             .mapValues(new AnomalyAggregateToAnomalyResultWithoutTitleMapper)
             .filter(new AnomalyFilter(params))
 
-        val anomalyJoinedResults: KStream[Int, AnomalyJoinedResult] = anomalyResultsWithoutTitleTable
+        val anomalyJoinedResults: KStream[Int, AnomalyJoinedResult] = anomalyResultsWithoutTitleStream
             .map(new AnomalyResultWithoutTitleToAnomalyJoinableResultMapper)
             .join(movieTitlesTable)(new AnomalyResultJoiner)
 
         anomalyJoinedResults
             .map(new AnomalyJoinedResultToAnomalyResultMapper)
-            .groupByKey
-            .reduce(new NoOpReducer[AnomalyResultValue])(Materialized
-                .as(ANOMALY_RESULT_STORE)
-                (CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson)
-            )
+            .to(ANOMALY_RESULT_TOPIC)(Produced
+                .`with`(CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson))
 
         builder.build()
     }

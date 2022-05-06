@@ -1,12 +1,12 @@
 package com.kaczmarek.bigdata.operator.joiner
 
-import com.kaczmarek.bigdata.model.{MovieRatingResult, MovieRatingResultWithoutTitle}
+import com.kaczmarek.bigdata.model.{MovieRatingJoinedResult, MovieRatingResultWithoutTitle}
 
 class MovieRatingResultJoiner
-    extends ((MovieRatingResultWithoutTitle, String) => MovieRatingResult) {
+    extends ((MovieRatingResultWithoutTitle, String) => MovieRatingJoinedResult) {
 
-    override def apply(resultWithoutTitle: MovieRatingResultWithoutTitle, title: String): MovieRatingResult =
-        MovieRatingResult(
+    override def apply(resultWithoutTitle: MovieRatingResultWithoutTitle, title: String): MovieRatingJoinedResult =
+        MovieRatingJoinedResult(
             year = resultWithoutTitle.year,
             month = resultWithoutTitle.month,
             title = title,

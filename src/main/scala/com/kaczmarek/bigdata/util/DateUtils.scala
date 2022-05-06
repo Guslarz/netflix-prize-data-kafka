@@ -21,6 +21,7 @@ object DateUtils {
     def parseDate(date: String): Date = FORMATTER
         .parse(date)
 
+    def formatYearMonth(year: Int, month: Int): String = s"$year-${monthToString(month)}"
 
     private def toCalendar(date: Date): Calendar = new Calendar.Builder()
         .setInstant(date)
@@ -30,5 +31,10 @@ object DateUtils {
         val formatter = new SimpleDateFormat(format)
         formatter.setTimeZone(TimeZone.getTimeZone("GMT"))
         formatter
+    }
+
+    private def monthToString(month: Int): String = {
+        if (month < 10) "0" + (month + 1).toString
+        else (month + 1).toString
     }
 }
