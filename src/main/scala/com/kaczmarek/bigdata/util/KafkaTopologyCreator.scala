@@ -6,7 +6,6 @@ import com.kaczmarek.bigdata.operator.joiner.{AnomalyResultJoiner, MovieRatingRe
 import com.kaczmarek.bigdata.operator.mapper._
 import com.kaczmarek.bigdata.operator.reducer.{AnomalyAggregateReducer, MovieRatingReducer, MovieRatingUserAggregateReducer, NoOpReducer}
 import com.kaczmarek.bigdata.operator.selector.MovieRatingAggregateSelector
-import com.kaczmarek.bigdata.parser.{MovieParser, MovieRatingVoteParser}
 import com.kaczmarek.bigdata.serde.CustomSerdes
 import com.kaczmarek.bigdata.serde.CustomSerdes._
 import com.kaczmarek.bigdata.timestamp.MovieRatingVoteTimestampExtractor
@@ -28,14 +27,11 @@ object KafkaTopologyCreator {
 
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
-        val movieParser = new MovieParser
-        val movieRatingVoteParser = new MovieRatingVoteParser
 
         val movieRatingVotesStream: KStream[String, MovieRatingVote] = builder
             .stream(MOVIE_RATING_VOTES_TOPIC)(Consumed
-                .`with`(Serdes.String, Serdes.String)
+                .`with`(Serdes.String, CustomSerdes.movieRatingVoteInput)
                 .withTimestampExtractor(new MovieRatingVoteTimestampExtractor))
-            .flatMapValues(value => movieRatingVoteParser.tryParse(value).toIterable)
 
         val movieRatingVoteUserAggregatesTable:
             KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] = movieRatingVotesStream
@@ -54,8 +50,8 @@ object KafkaTopologyCreator {
                 .reduce(new NoOpReducer[MovieRatingResultWithoutTitle], new NoOpReducer[MovieRatingResultWithoutTitle])
 
         val moviesStream: KStream[String, Movie] = builder
-            .stream[String, String](MOVIE_TITLES_TOPIC)
-            .flatMapValues(value => movieParser.tryParse(value).toIterable)
+            .stream(MOVIE_TITLES_TOPIC)(Consumed
+                .`with`(Serdes.String, CustomSerdes.movieInput))
 
         val movieTitlesTable: KTable[Int, String] = moviesStream
             .map(new MovieToMovieTitleMapper)
