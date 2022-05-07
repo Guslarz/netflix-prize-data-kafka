@@ -30,9 +30,55 @@ object KafkaTopologyCreator {
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
 
+        val movieRatingVotesStream: KStream[String, MovieRatingVote] = readMovieRatingVotesStream(builder)
+
+        val movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] =
+            aggregateMovieRatingVotesToTable(movieRatingVotesStream)
+
+        val movieTitlesTable: KTable[Int, String] = readMovieTitlesTable(builder)
+
+        val movieRatingResultsStream: KStream[MovieRatingResultKey, MovieRatingResultValue] =
+            prepareMovieRatingResultsStream(movieRatingVoteAggregatesTable, movieTitlesTable)
+
+        movieRatingResultsStream.to(ETL_RESULT_TOPIC)(Produced.
+            `with`(CustomSerdes.movieRatingResultKeyJson, CustomSerdes.movieRatingResultValueJson))
+
+        val eventTimestampedMovieRatingVotesStream: KStream[String, MovieRatingVote] =
+            assignEventTimestampToMovieRatingVote(movieRatingVotesStream)
+
+        val anomalyResultsStream: KStream[AnomalyResultKey, AnomalyResultValue] =
+            prepareAnomalyResultsStream(params, movieTitlesTable, eventTimestampedMovieRatingVotesStream)
+
+        anomalyResultsStream
+            .to(ANOMALY_RESULT_TOPIC)(Produced
+                .`with`(CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson))
+
+        builder.build()
+    }
+
+    private def readMovieRatingVotesStream(builder: StreamsBuilder): KStream[String, MovieRatingVote] = {
         val movieRatingVotesStream: KStream[String, MovieRatingVote] = builder
             .stream(MOVIE_RATING_VOTES_TOPIC)(Consumed
                 .`with`(Serdes.String, CustomSerdes.movieRatingVoteInput))
+
+        movieRatingVotesStream
+    }
+
+    private def readMovieTitlesTable(builder: StreamsBuilder): KTable[Int, String] = {
+        val moviesStream: KStream[String, Movie] = builder
+            .stream(MOVIE_TITLES_TOPIC)(Consumed
+                .`with`(Serdes.String, CustomSerdes.movieInput))
+
+        val movieTitlesTable: KTable[Int, String] = moviesStream
+            .map(new MovieToMovieTitleMapper)
+            .groupByKey
+            .reduce(new NoOpReducer[String])
+
+        movieTitlesTable
+    }
+
+    private def aggregateMovieRatingVotesToTable(movieRatingVotesStream: KStream[String, MovieRatingVote]):
+    KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] = {
 
         val movieRatingVoteUserAggregatesTable: KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
             movieRatingVotesStream
@@ -45,14 +91,13 @@ object KafkaTopologyCreator {
                 .groupBy(new MovieRatingAggregateSelector)
                 .reduce(MovieRatingReducer.adder, MovieRatingReducer.subtractor)
 
-        val moviesStream: KStream[String, Movie] = builder
-            .stream(MOVIE_TITLES_TOPIC)(Consumed
-                .`with`(Serdes.String, CustomSerdes.movieInput))
+        movieRatingVoteAggregatesTable
+    }
 
-        val movieTitlesTable: KTable[Int, String] = moviesStream
-            .map(new MovieToMovieTitleMapper)
-            .groupByKey
-            .reduce(new NoOpReducer[String])
+    private def prepareMovieRatingResultsStream(
+        movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue],
+        movieTitlesTable: KTable[Int, String]
+    ): KStream[MovieRatingResultKey, MovieRatingResultValue] = {
 
         val movieRatingResultsWithoutTitleStream: KStream[Int, MovieRatingResultWithoutTitle] =
             movieRatingVoteAggregatesTable
@@ -62,13 +107,24 @@ object KafkaTopologyCreator {
         val movieRatingJoinedResultsStream: KStream[Int, MovieRatingJoinedResult] = movieRatingResultsWithoutTitleStream
             .join(movieTitlesTable)(new MovieRatingResultJoiner)
 
-        movieRatingJoinedResultsStream
-            .map(new MovieRatingJoinedResultToMovieRatingResultMapper)
-            .to(ETL_RESULT_TOPIC)(Produced.
-                `with`(CustomSerdes.movieRatingResultKeyJson, CustomSerdes.movieRatingResultValueJson))
+        val movieRatingResultsStream: KStream[MovieRatingResultKey, MovieRatingResultValue] =
+            movieRatingJoinedResultsStream
+                .map(new MovieRatingJoinedResultToMovieRatingResultMapper)
 
+        movieRatingResultsStream
+    }
+
+    private def assignEventTimestampToMovieRatingVote(movieRatingVotesStream: KStream[String, MovieRatingVote]) = {
         val eventTimestampedMovieRatingVotesStream: KStream[String, MovieRatingVote] = movieRatingVotesStream
             .transform(new EventTimestampTransformerSupplier)
+
+        eventTimestampedMovieRatingVotesStream
+    }
+
+    private def prepareAnomalyResultsStream(
+        params: Params, movieTitlesTable: KTable[Int, String],
+        eventTimestampedMovieRatingVotesStream: KStream[String, MovieRatingVote]
+    ): KStream[AnomalyResultKey, AnomalyResultValue] = {
 
         val anomalyAggregateTable: KTable[Windowed[Int], AnomalyAggregate] = eventTimestampedMovieRatingVotesStream
             .map(new MovieRatingVoteToAnomalyAggregateMapper)
@@ -85,15 +141,13 @@ object KafkaTopologyCreator {
             .mapValues(new AnomalyAggregateToAnomalyResultWithoutTitleMapper)
             .filter(new AnomalyFilter(params))
 
-        val anomalyJoinedResults: KStream[Int, AnomalyJoinedResult] = anomalyResultsWithoutTitleStream
+        val anomalyJoinedResultsStream: KStream[Int, AnomalyJoinedResult] = anomalyResultsWithoutTitleStream
             .map(new AnomalyResultWithoutTitleToAnomalyJoinableResultMapper)
             .join(movieTitlesTable)(new AnomalyResultJoiner)
 
-        anomalyJoinedResults
+        val anomalyResultsStream: KStream[AnomalyResultKey, AnomalyResultValue] = anomalyJoinedResultsStream
             .map(new AnomalyJoinedResultToAnomalyResultMapper)
-            .to(ANOMALY_RESULT_TOPIC)(Produced
-                .`with`(CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson))
 
-        builder.build()
+        anomalyResultsStream
     }
 }
