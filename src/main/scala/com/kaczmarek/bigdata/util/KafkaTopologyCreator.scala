@@ -33,16 +33,16 @@ object KafkaTopologyCreator {
                 .`with`(Serdes.String, CustomSerdes.movieRatingVoteInput)
                 .withTimestampExtractor(new MovieRatingVoteTimestampExtractor))
 
-        val movieRatingVoteUserAggregatesTable:
-            KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] = movieRatingVotesStream
-            .map(new MovieRatingVoteToMovieRatingUserAggregateMapper)
-            .groupByKey
-            .reduce(new MovieRatingUserAggregateReducer)
+        val movieRatingVoteUserAggregatesTable: KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
+            movieRatingVotesStream
+                .map(new MovieRatingVoteToMovieRatingUserAggregateMapper)
+                .groupByKey
+                .reduce(new MovieRatingUserAggregateReducer)
 
-        val movieRatingVoteAggregatesTable:
-            KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] = movieRatingVoteUserAggregatesTable
-            .groupBy(new MovieRatingAggregateSelector)
-            .reduce(MovieRatingReducer.adder, MovieRatingReducer.subtractor)
+        val movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] =
+            movieRatingVoteUserAggregatesTable
+                .groupBy(new MovieRatingAggregateSelector)
+                .reduce(MovieRatingReducer.adder, MovieRatingReducer.subtractor)
 
         val moviesStream: KStream[String, Movie] = builder
             .stream(MOVIE_TITLES_TOPIC)(Consumed
