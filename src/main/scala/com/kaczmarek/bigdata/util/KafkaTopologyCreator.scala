@@ -4,6 +4,7 @@ import com.kaczmarek.bigdata.model._
 import com.kaczmarek.bigdata.operator.filter.AnomalyFilter
 import com.kaczmarek.bigdata.operator.joiner.{AnomalyResultJoiner, MovieRatingResultJoiner}
 import com.kaczmarek.bigdata.operator.mapper._
+import com.kaczmarek.bigdata.operator.predicate.{CurrentMovieRatingUserAggregatePredicate, TruePredicate}
 import com.kaczmarek.bigdata.operator.reducer.{AnomalyAggregateReducer, MovieRatingReducer, MovieRatingUserAggregateReducer, NoOpReducer}
 import com.kaczmarek.bigdata.operator.selector.MovieRatingAggregateSelector
 import com.kaczmarek.bigdata.operator.transformer.EventTimestampTransformerSupplier
@@ -49,9 +50,8 @@ object KafkaTopologyCreator {
         val anomalyResultsStream: KStream[AnomalyResultKey, AnomalyResultValue] =
             prepareAnomalyResultsStream(params, movieTitlesTable, eventTimestampedMovieRatingVotesStream)
 
-        anomalyResultsStream
-            .to(ANOMALY_RESULT_TOPIC)(Produced
-                .`with`(CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson))
+        anomalyResultsStream.to(ANOMALY_RESULT_TOPIC)(Produced
+            .`with`(CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson))
 
         builder.build()
     }
@@ -80,18 +80,53 @@ object KafkaTopologyCreator {
     private def aggregateMovieRatingVotesToTable(movieRatingVotesStream: KStream[String, MovieRatingVote]):
     KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] = {
 
-        val movieRatingVoteUserAggregatesTable: KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
+        val movieRatingUserAggregatesStream: KStream[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
             movieRatingVotesStream
                 .map(new MovieRatingVoteToMovieRatingUserAggregateMapper)
+
+        val movieRatingUserAggregatesSubStreams:
+            Array[KStream[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue]] =
+            movieRatingUserAggregatesStream
+                .branch(
+                    new CurrentMovieRatingUserAggregatePredicate,
+                    new TruePredicate[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue]
+                )
+                .zip(List(
+                    Duration.ofHours(1),
+                    Duration.ofSeconds(10)
+                ))
+                .map(pair => aggregateMovieRatingUserAggregateSubStream(pair._1, pair._2))
+
+        val movieRatingUserAggregatesMergedTable: KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
+            movieRatingUserAggregatesSubStreams(0)
+                .merge(movieRatingUserAggregatesSubStreams(1))
                 .groupByKey
-                .reduce(new MovieRatingUserAggregateReducer)
+                .reduce(new NoOpReducer[MovieRatingUserAggregateValue])
 
         val movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] =
-            movieRatingVoteUserAggregatesTable
+            movieRatingUserAggregatesMergedTable
                 .groupBy(new MovieRatingAggregateSelector)
                 .reduce(MovieRatingReducer.adder, MovieRatingReducer.subtractor)
 
         movieRatingVoteAggregatesTable
+    }
+
+    private def aggregateMovieRatingUserAggregateSubStream(
+        movieRatingUserAggregatesSubStream: KStream[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue],
+        windowDuration: Duration
+    ): KStream[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] = {
+
+        val movieRatingVoteUserAggregatesSubStream: KStream[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
+            movieRatingUserAggregatesSubStream
+                .groupByKey
+                .windowedBy(TimeWindows.of(windowDuration))
+                .reduce(new MovieRatingUserAggregateReducer)
+                .suppress(Suppressed
+                    .untilWindowCloses[MovieRatingUserAggregateKey](Suppressed.BufferConfig.unbounded()))
+                .toStream
+                .map(new UnwindowKeyMapper[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue])
+
+        movieRatingVoteUserAggregatesSubStream
     }
 
     private def prepareMovieRatingResultsStream(

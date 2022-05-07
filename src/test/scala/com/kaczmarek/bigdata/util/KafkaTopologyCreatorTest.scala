@@ -2,18 +2,21 @@ package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model._
 import com.kaczmarek.bigdata.serde.JsonDeserializer
+import com.kaczmarek.bigdata.util.KafkaTopologyCreatorTest.DummyTimestampExtractor
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
+import org.apache.kafka.streams.processor.TimestampExtractor
 import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{StreamsConfig, TopologyTestDriver}
-import org.junit.jupiter.api.Assertions.{assertEquals, assertNull, assertTrue}
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
 import java.io.InputStream
+import java.time.{Duration, Instant}
 import java.util.Properties
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -32,8 +35,11 @@ class KafkaTopologyCreatorTest {
         val testDriver = createTestDriver()
 
         // when
-        pipeInput(testDriver, KafkaTopologyCreator.MOVIE_TITLES_TOPIC, titlesInputStream)
-        pipeInput(testDriver, KafkaTopologyCreator.MOVIE_RATING_VOTES_TOPIC, votesInputStream)
+        pipeInput(testDriver, KafkaTopologyCreator.MOVIE_TITLES_TOPIC, titlesInputStream, None)
+        pipeInput(
+            testDriver, KafkaTopologyCreator.MOVIE_RATING_VOTES_TOPIC, votesInputStream,
+            Some("2000-01-01,-1,0,0")
+        )
 
         // then
         try {
@@ -41,11 +47,11 @@ class KafkaTopologyCreatorTest {
                 testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC, expectedEtlInputStream)
             verifyOutput[AnomalyResultKey, AnomalyResultValue](
                 testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC, expectedAnomalyInputStream)
-//                        println(KafkaTopologyCreator.ETL_RESULT_TOPIC)
-//                        printRecords[MovieRatingResultKey, MovieRatingResultValue](testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC)
-//                        println()
-//                        println(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
-//                        printRecords[AnomalyResultKey, AnomalyResultValue](testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
+            //                        println(KafkaTopologyCreator.ETL_RESULT_TOPIC)
+            //                        printRecords[MovieRatingResultKey, MovieRatingResultValue](testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC)
+            //                        println()
+            //                        println(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
+            //                        printRecords[AnomalyResultKey, AnomalyResultValue](testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
         } finally {
             testDriver.close()
         }
@@ -78,6 +84,8 @@ class KafkaTopologyCreatorTest {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234")
         props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
             classOf[LogAndContinueExceptionHandler])
+        props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
+            classOf[DummyTimestampExtractor])
         props
     }
 
@@ -93,12 +101,16 @@ class KafkaTopologyCreatorTest {
         .getLines()
         .toList
 
-    private def pipeInput(testDriver: TopologyTestDriver, topic: String, inputStream: InputStream): Unit = {
+    private def pipeInput(
+        testDriver: TopologyTestDriver, topic: String, inputStream: InputStream, dummyInput: Option[String]): Unit = {
+
         val stringSerializer = new StringSerializer
         val consumerRecordFactory = new ConsumerRecordFactory[String, String](
             topic, stringSerializer, stringSerializer)
-        val records = readLines(inputStream)
-            .map(line => consumerRecordFactory.create(line))
+        val records = List.concat(
+            readLines(inputStream),
+            dummyInput
+        ).map(line => consumerRecordFactory.create(line))
         testDriver.pipeInput(records.asJava)
     }
 
@@ -146,4 +158,19 @@ object KafkaTopologyCreatorTest {
 
     private def readResource(name: String): InputStream = getClass
         .getResourceAsStream(name)
+
+    private class DummyTimestampExtractor extends TimestampExtractor {
+
+        override def extract(consumerRecord: ConsumerRecord[AnyRef, AnyRef], previousTimestamp: Long): Long = {
+            consumerRecord.value() match {
+                case value: MovieRatingVote =>
+                    if (value.movieId == -1) {
+                        Instant.now().plus(Duration.ofDays(1)).toEpochMilli
+                    } else {
+                        System.currentTimeMillis()
+                    }
+                case _ => System.currentTimeMillis()
+            }
+        }
+    }
 }

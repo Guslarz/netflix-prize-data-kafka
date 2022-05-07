@@ -6,6 +6,7 @@ import java.util.{Calendar, Date, TimeZone}
 
 object DateUtils {
 
+    private val TIME_ZONE = TimeZone.getTimeZone("GMT")
     private val FORMAT = "yyyy-MM-dd"
     private val FORMATTER = getFormatter(FORMAT)
 
@@ -23,13 +24,22 @@ object DateUtils {
 
     def formatYearMonth(year: Int, month: Int): String = s"$year-${monthToString(month)}"
 
+    def yearMonthToTimestamp(year: Int, month: Int): Long = new Calendar.Builder()
+        .set(Calendar.YEAR, year)
+        .set(Calendar.MONTH, month)
+        .set(Calendar.DATE, 1)
+        .setTimeOfDay(0, 0, 0)
+        .setTimeZone(TIME_ZONE)
+        .build()
+        .getTimeInMillis
+
     private def toCalendar(date: Date): Calendar = new Calendar.Builder()
         .setInstant(date)
         .build()
 
     private def getFormatter(format: String): SimpleDateFormat = {
         val formatter = new SimpleDateFormat(format)
-        formatter.setTimeZone(TimeZone.getTimeZone("GMT"))
+        formatter.setTimeZone(TIME_ZONE)
         formatter
     }
 
