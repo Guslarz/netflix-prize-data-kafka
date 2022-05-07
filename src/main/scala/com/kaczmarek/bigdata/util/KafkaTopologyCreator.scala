@@ -93,7 +93,7 @@ object KafkaTopologyCreator {
                 )
                 .zip(List(
                     Duration.ofHours(1),
-                    Duration.ofSeconds(10)
+                    Duration.ofSeconds(10),
                 ))
                 .map(pair => aggregateMovieRatingUserAggregateSubStream(pair._1, pair._2))
 
@@ -122,7 +122,8 @@ object KafkaTopologyCreator {
                 .windowedBy(TimeWindows.of(windowDuration))
                 .reduce(new MovieRatingUserAggregateReducer)
                 .suppress(Suppressed
-                    .untilWindowCloses[MovieRatingUserAggregateKey](Suppressed.BufferConfig.unbounded()))
+                    .untilTimeLimit[Windowed[MovieRatingUserAggregateKey]](
+                        windowDuration, Suppressed.BufferConfig.unbounded()))
                 .toStream
                 .map(new UnwindowKeyMapper[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue])
 

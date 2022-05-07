@@ -15,7 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
 import java.io.InputStream
-import java.time.{Duration, Instant}
+import java.time.Duration
 import java.util.Properties
 import scala.collection.JavaConverters._
 import scala.io.Source
@@ -38,7 +38,7 @@ class KafkaTopologyCreatorTest {
         pipeInput(testDriver, KafkaTopologyCreator.MOVIE_TITLES_TOPIC, titlesInputStream, None)
         pipeInput(
             testDriver, KafkaTopologyCreator.MOVIE_RATING_VOTES_TOPIC, votesInputStream,
-            Some("2000-01-01,-1,0,0")
+            Some("2000-01-01,-1,0,0") // dummy input to handle suppression
         )
 
         // then
@@ -162,15 +162,16 @@ object KafkaTopologyCreatorTest {
     private class DummyTimestampExtractor extends TimestampExtractor {
 
         override def extract(consumerRecord: ConsumerRecord[AnyRef, AnyRef], previousTimestamp: Long): Long = {
-            consumerRecord.value() match {
+
+            System.currentTimeMillis() + (consumerRecord.value() match {
                 case value: MovieRatingVote =>
                     if (value.movieId == -1) {
-                        Instant.now().plus(Duration.ofDays(1)).toEpochMilli
+                        Duration.ofHours(1).toMillis
                     } else {
-                        System.currentTimeMillis()
+                        0L
                     }
-                case _ => System.currentTimeMillis()
-            }
+                case _ => 0L
+            })
         }
     }
 }
