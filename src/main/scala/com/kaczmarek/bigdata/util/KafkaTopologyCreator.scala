@@ -6,9 +6,9 @@ import com.kaczmarek.bigdata.operator.joiner.{AnomalyResultJoiner, MovieRatingRe
 import com.kaczmarek.bigdata.operator.mapper._
 import com.kaczmarek.bigdata.operator.reducer.{AnomalyAggregateReducer, MovieRatingReducer, MovieRatingUserAggregateReducer, NoOpReducer}
 import com.kaczmarek.bigdata.operator.selector.MovieRatingAggregateSelector
+import com.kaczmarek.bigdata.operator.transformer.EventTimestampTransformerSupplier
 import com.kaczmarek.bigdata.serde.CustomSerdes
 import com.kaczmarek.bigdata.serde.CustomSerdes._
-import com.kaczmarek.bigdata.timestamp.MovieRatingVoteTimestampExtractor
 import org.apache.kafka.streams.Topology
 import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala.ImplicitConversions._
@@ -25,13 +25,14 @@ object KafkaTopologyCreator {
     val ETL_RESULT_TOPIC: String = "movie-ratings"
     val ANOMALY_RESULT_TOPIC: String = "popular-movies"
 
+    val MAPPED_MOVIE_RATING_VOTES_TOPIC: String = "mapped-movie-rating-votes"
+
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
 
         val movieRatingVotesStream: KStream[String, MovieRatingVote] = builder
             .stream(MOVIE_RATING_VOTES_TOPIC)(Consumed
-                .`with`(Serdes.String, CustomSerdes.movieRatingVoteInput)
-                .withTimestampExtractor(new MovieRatingVoteTimestampExtractor))
+                .`with`(Serdes.String, CustomSerdes.movieRatingVoteInput))
 
         val movieRatingVoteUserAggregatesTable: KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
             movieRatingVotesStream
@@ -66,7 +67,10 @@ object KafkaTopologyCreator {
             .to(ETL_RESULT_TOPIC)(Produced.
                 `with`(CustomSerdes.movieRatingResultKeyJson, CustomSerdes.movieRatingResultValueJson))
 
-        val anomalyAggregateTable: KTable[Windowed[Int], AnomalyAggregate] = movieRatingVotesStream
+        val eventTimestampedMovieRatingVotesStream: KStream[String, MovieRatingVote] = movieRatingVotesStream
+            .transform(new EventTimestampTransformerSupplier)
+
+        val anomalyAggregateTable: KTable[Windowed[Int], AnomalyAggregate] = eventTimestampedMovieRatingVotesStream
             .map(new MovieRatingVoteToAnomalyAggregateMapper)
             .groupByKey
             .windowedBy(TimeWindows

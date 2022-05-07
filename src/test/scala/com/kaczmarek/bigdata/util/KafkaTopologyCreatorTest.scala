@@ -1,18 +1,19 @@
 package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model._
-import com.kaczmarek.bigdata.serde.{CustomSerdes, JsonDeserializer}
+import com.kaczmarek.bigdata.serde.JsonDeserializer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{StreamsConfig, TopologyTestDriver}
-import org.junit.jupiter.api.Assertions.{assertEquals, assertNull}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertNull, assertTrue}
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.{Arguments, MethodSource}
 
 import java.io.InputStream
 import java.util.Properties
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -36,13 +37,15 @@ class KafkaTopologyCreatorTest {
 
         // then
         try {
-            //            verifyEtlOutput(testDriver, expectedEtlInputStream)
-            //            verifyAnomalyOutput(testDriver, expectedAnomalyInputStream)
-            println(KafkaTopologyCreator.ETL_RESULT_TOPIC)
-            printRecords[MovieRatingResultKey, MovieRatingResultValue](testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC)
-            println()
-            println(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
-            printRecords[AnomalyResultKey, AnomalyResultValue](testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
+            verifyOutput[MovieRatingResultKey, MovieRatingResultValue](
+                testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC, expectedEtlInputStream)
+            verifyOutput[AnomalyResultKey, AnomalyResultValue](
+                testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC, expectedAnomalyInputStream)
+//                        println(KafkaTopologyCreator.ETL_RESULT_TOPIC)
+//                        printRecords[MovieRatingResultKey, MovieRatingResultValue](testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC)
+//                        println()
+//                        println(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
+//                        printRecords[AnomalyResultKey, AnomalyResultValue](testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
         } finally {
             testDriver.close()
         }
@@ -99,44 +102,29 @@ class KafkaTopologyCreatorTest {
         testDriver.pipeInput(records.asJava)
     }
 
-    private def verifyEtlOutput(testDriver: TopologyTestDriver, expectedInputStream: InputStream): Unit = {
-        readLines(expectedInputStream)
-            .foreach(line => verifyEtlRecord(testDriver, line))
-        assertNull(testDriver.readOutput(KafkaTopologyCreator.ETL_RESULT_TOPIC))
-    }
-
-    private def verifyEtlRecord(testDriver: TopologyTestDriver, line: String): Unit = {
-        val values = line.split('\t')
-        val expectedKey = CustomSerdes.movieRatingResultKeyJson.deserializer()
-            .deserialize("", values(0).getBytes)
-        val expectedValue = CustomSerdes.movieRatingResultValueJson.deserializer()
-            .deserialize("", values(1).getBytes)
-        val record: ProducerRecord[MovieRatingResultKey, MovieRatingResultValue] = testDriver.readOutput(
-            KafkaTopologyCreator.ETL_RESULT_TOPIC,
-            CustomSerdes.movieRatingResultKeyJson.deserializer(),
-            CustomSerdes.movieRatingResultValueJson.deserializer()
-        )
-        assertEquals(expectedKey, record.key())
-        assertEquals(expectedValue, record.value())
-    }
-
-    private def verifyAnomalyOutput(testDriver: TopologyTestDriver, expectedInputStream: InputStream): Unit = {
-        readLines(expectedInputStream)
-            .foreach(line => verifyAnomalyRecord(testDriver, line))
-        assertNull(testDriver.readOutput(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC))
-    }
-
-    private def verifyAnomalyRecord(testDriver: TopologyTestDriver, line: String): Unit = {
-        val values = line.split('\t')
-        val expectedKey = CustomSerdes.anomalyResultKeyJson.deserializer().deserialize("", values(0).getBytes)
-        val expectedValue = CustomSerdes.anomalyResultValueJson.deserializer().deserialize("", values(1).getBytes)
-        val record: ProducerRecord[AnomalyResultKey, AnomalyResultValue] = testDriver.readOutput(
-            KafkaTopologyCreator.ANOMALY_RESULT_TOPIC,
-            CustomSerdes.anomalyResultKeyJson.deserializer(),
-            CustomSerdes.anomalyResultValueJson.deserializer()
-        )
-        assertEquals(expectedKey, record.key())
-        assertEquals(expectedValue, record.value())
+    private def verifyOutput[K, V](testDriver: TopologyTestDriver, topic: String, expectedInputStream: InputStream)
+                                  (implicit k: ClassTag[K], v: ClassTag[V]): Unit = {
+        val keyDeserializer = new JsonDeserializer[K]
+        val valueDeserializer = new JsonDeserializer[V]
+        val expected = readLines(expectedInputStream)
+            .map(line => {
+                val values = line.split('\t')
+                val expectedKey = keyDeserializer.deserialize("", values(0).getBytes)
+                val expectedValue = valueDeserializer.deserialize("", values(1).getBytes)
+                (expectedKey, expectedValue)
+            })
+            .toMap[K, V]
+        val result = Stream
+            .iterate(0)(i => i + 1)
+            .map(i => testDriver.readOutput[K, V](topic, keyDeserializer, valueDeserializer))
+            .takeWhile(_ != null)
+            .map(record => (record.key(), record.value()))
+            .toMap[K, V]
+        println(s"Topic: $topic")
+        println(s"Expected: $expected")
+        println(s"Found: $result")
+        println()
+        assertEquals(expected, result)
     }
 }
 

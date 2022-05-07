@@ -7,6 +7,7 @@ object CustomSerdes {
 
     val movieRatingVoteInput: Serde[MovieRatingVote] = new CsvSerde
     val movieInput: Serde[Movie] = new CsvSerde
+    implicit val movieRatingVote: Serde[MovieRatingVote] = new ObjectSerde
     implicit val movieRatingUserAggregateKey: Serde[MovieRatingUserAggregateKey] = new ObjectSerde
     implicit val movieRatingUserAggregateValue: Serde[MovieRatingUserAggregateValue] = new ObjectSerde
     implicit val movieRatingAggregateKey: Serde[MovieRatingAggregateKey] = new ObjectSerde
