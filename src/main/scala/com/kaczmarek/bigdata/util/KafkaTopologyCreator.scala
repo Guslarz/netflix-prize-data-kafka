@@ -10,6 +10,7 @@ import com.kaczmarek.bigdata.operator.selector.MovieRatingAggregateSelector
 import com.kaczmarek.bigdata.operator.transformer.EventTimestampTransformerSupplier
 import com.kaczmarek.bigdata.serde.CustomSerdes
 import com.kaczmarek.bigdata.serde.CustomSerdes._
+import com.kaczmarek.bigdata.timestamp.ProcessingTimestampExtractor
 import org.apache.kafka.streams.Topology
 import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala.ImplicitConversions._
@@ -101,7 +102,7 @@ object KafkaTopologyCreator {
             movieRatingUserAggregatesSubStreams(0)
                 .merge(movieRatingUserAggregatesSubStreams(1))
                 .groupByKey
-                .reduce(new NoOpReducer[MovieRatingUserAggregateValue])
+                .reduce(new MovieRatingUserAggregateReducer)
 
         val movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] =
             movieRatingUserAggregatesMergedTable

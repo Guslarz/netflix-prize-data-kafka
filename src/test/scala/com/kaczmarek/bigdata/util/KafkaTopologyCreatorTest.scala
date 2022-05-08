@@ -18,6 +18,7 @@ import java.io.InputStream
 import java.time.Duration
 import java.util.Properties
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.io.Source
 import scala.reflect.ClassTag
 
@@ -126,12 +127,13 @@ class KafkaTopologyCreatorTest {
                 (expectedKey, expectedValue)
             })
             .toMap[K, V]
-        val result = Stream
-            .iterate(0)(i => i + 1)
-            .map(i => testDriver.readOutput[K, V](topic, keyDeserializer, valueDeserializer))
-            .takeWhile(_ != null)
-            .map(record => (record.key(), record.value()))
-            .toMap[K, V]
+        val result = mutable.Map[K, V]()
+        var record: ProducerRecord[K, V] = testDriver.readOutput[K, V](topic, keyDeserializer, valueDeserializer)
+        while (record != null) {
+            println(s"${record.key()} ${record.value()}")
+            result.put(record.key(), record.value())
+            record = testDriver.readOutput[K, V](topic, keyDeserializer, valueDeserializer)
+        }
         println(s"Topic: $topic")
         println(s"Expected: $expected")
         println(s"Found: $result")

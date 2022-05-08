@@ -4,12 +4,13 @@
 
 set -e
 
-tail -n +2 ~/movie_titles.csv >> /tmp/netflix-prize-data/movie_titles.csv
+tail -n +2 ~/movie_titles.csv > /tmp/netflix-prize-data/movie_titles.csv
 
-source_files=~/ratings
-target_file=/tmp/netflix-prize-data/ratings.csv
-for file in `ls -v $source_files/*`; do
+source_dir=~/ratings
+target_dir=/tmp/netflix-prize-data/ratings
+for file in `ls -v $source_dir/*`; do
   echo $file
-  cat $file >> $target_file
-  sleep 1
+  filename=`basename $file`
+  cp $file $target_dir/$filename
+  sleep 10
 done
