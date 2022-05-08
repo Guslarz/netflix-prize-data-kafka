@@ -8,9 +8,9 @@ import com.kaczmarek.bigdata.operator.predicate.{CurrentMovieRatingUserAggregate
 import com.kaczmarek.bigdata.operator.reducer.{AnomalyAggregateReducer, MovieRatingReducer, MovieRatingUserAggregateReducer, NoOpReducer}
 import com.kaczmarek.bigdata.operator.selector.MovieRatingAggregateSelector
 import com.kaczmarek.bigdata.operator.transformer.EventTimestampTransformerSupplier
+import com.kaczmarek.bigdata.schema.SchemaKeyValueWrapper
 import com.kaczmarek.bigdata.serde.CustomSerdes
 import com.kaczmarek.bigdata.serde.CustomSerdes._
-import com.kaczmarek.bigdata.timestamp.ProcessingTimestampExtractor
 import org.apache.kafka.streams.Topology
 import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala.ImplicitConversions._
@@ -42,8 +42,11 @@ object KafkaTopologyCreator {
         val movieRatingResultsStream: KStream[MovieRatingResultKey, MovieRatingResultValue] =
             prepareMovieRatingResultsStream(movieRatingVoteAggregatesTable, movieTitlesTable)
 
-        movieRatingResultsStream.to(ETL_RESULT_TOPIC)(Produced.
-            `with`(CustomSerdes.movieRatingResultKeyJson, CustomSerdes.movieRatingResultValueJson))
+        movieRatingResultsStream
+            .map(new SchemaKeyValueWrapper[MovieRatingResultKey, MovieRatingResultValue](
+                "movie-rating-result-key.json", "movie-rating-result-value.json"))
+            .to(ETL_RESULT_TOPIC)(Produced.
+                `with`(CustomSerdes.movieRatingResultKeySchemaJson, CustomSerdes.movieRatingResultValueSchemaJson))
 
         val eventTimestampedMovieRatingVotesStream: KStream[String, MovieRatingVote] =
             assignEventTimestampToMovieRatingVote(movieRatingVotesStream)
@@ -51,8 +54,11 @@ object KafkaTopologyCreator {
         val anomalyResultsStream: KStream[AnomalyResultKey, AnomalyResultValue] =
             prepareAnomalyResultsStream(params, movieTitlesTable, eventTimestampedMovieRatingVotesStream)
 
-        anomalyResultsStream.to(ANOMALY_RESULT_TOPIC)(Produced
-            .`with`(CustomSerdes.anomalyResultKeyJson, CustomSerdes.anomalyResultValueJson))
+        anomalyResultsStream
+            .map(new SchemaKeyValueWrapper[AnomalyResultKey, AnomalyResultValue](
+                "anomaly-result-key.json", "anomaly-result-value.json"))
+            .to(ANOMALY_RESULT_TOPIC)(Produced
+                .`with`(CustomSerdes.anomalyResultKeySchemaJson, CustomSerdes.anomalyResultValueSchemaJson))
 
         builder.build()
     }

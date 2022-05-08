@@ -1,0 +1,22 @@
+{
+  "name": "movie-rating-result-value",
+  "type": "object",
+  "properties": [
+    {
+      "name": "title",
+      "type": "string"
+    },
+    {
+      "name": "voteCount",
+      "type": "number"
+    },
+    {
+      "name": "ratingSum",
+      "type": "number"
+    },
+    {
+      "name": "uniqueVoteCount",
+      "type": "number"
+    }
+  ]
+}

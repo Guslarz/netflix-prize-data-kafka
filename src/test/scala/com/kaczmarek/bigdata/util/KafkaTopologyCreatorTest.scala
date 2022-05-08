@@ -1,7 +1,8 @@
 package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model._
-import com.kaczmarek.bigdata.serde.JsonDeserializer
+import com.kaczmarek.bigdata.schema.MessageWithSchema
+import com.kaczmarek.bigdata.serde.{JsonDeserializer, JsonWithSchemaDeserializer}
 import com.kaczmarek.bigdata.util.KafkaTopologyCreatorTest.DummyTimestampExtractor
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -117,22 +118,27 @@ class KafkaTopologyCreatorTest {
 
     private def verifyOutput[K, V](testDriver: TopologyTestDriver, topic: String, expectedInputStream: InputStream)
                                   (implicit k: ClassTag[K], v: ClassTag[V]): Unit = {
-        val keyDeserializer = new JsonDeserializer[K]
-        val valueDeserializer = new JsonDeserializer[V]
+        val keyDeserializer = new JsonWithSchemaDeserializer[K]
+        val valueDeserializer = new JsonWithSchemaDeserializer[V]
+        val expectedKeyDeserializer = new JsonDeserializer[K]
+        val expectedValueDeserializer = new JsonDeserializer[V]
         val expected = readLines(expectedInputStream)
             .map(line => {
                 val values = line.split('\t')
-                val expectedKey = keyDeserializer.deserialize("", values(0).getBytes)
-                val expectedValue = valueDeserializer.deserialize("", values(1).getBytes)
+                val expectedKey = expectedKeyDeserializer.deserialize("", values(0).getBytes)
+                val expectedValue = expectedValueDeserializer.deserialize("", values(1).getBytes)
                 (expectedKey, expectedValue)
             })
             .toMap[K, V]
         val result = mutable.Map[K, V]()
-        var record: ProducerRecord[K, V] = testDriver.readOutput[K, V](topic, keyDeserializer, valueDeserializer)
+        var record: ProducerRecord[MessageWithSchema[K], MessageWithSchema[V]] =
+            testDriver.readOutput[MessageWithSchema[K], MessageWithSchema[V]](
+                topic, keyDeserializer, valueDeserializer)
         while (record != null) {
             println(s"${record.key()} ${record.value()}")
-            result.put(record.key(), record.value())
-            record = testDriver.readOutput[K, V](topic, keyDeserializer, valueDeserializer)
+            result.put(record.key().payload, record.value().payload)
+            record = testDriver.readOutput[MessageWithSchema[K], MessageWithSchema[V]](
+                topic, keyDeserializer, valueDeserializer)
         }
         println(s"Topic: $topic")
         println(s"Expected: $expected")

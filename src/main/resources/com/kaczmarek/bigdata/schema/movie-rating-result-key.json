@@ -1,0 +1,14 @@
+{
+  "name": "movie-rating-result-key",
+  "type": "object",
+  "properties": [
+    {
+      "name": "movieId",
+      "type": "number"
+    },
+    {
+      "name": "yearMonth",
+      "type": "string"
+    }
+  ]
+}
