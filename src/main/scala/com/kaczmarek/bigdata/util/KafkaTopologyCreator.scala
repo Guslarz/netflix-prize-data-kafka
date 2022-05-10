@@ -2,7 +2,7 @@ package com.kaczmarek.bigdata.util
 
 import com.kaczmarek.bigdata.model._
 import com.kaczmarek.bigdata.operator.filter.AnomalyFilter
-import com.kaczmarek.bigdata.operator.joiner.{AnomalyResultJoiner, MovieRatingResultJoiner}
+import com.kaczmarek.bigdata.operator.joiner.{AnomalyResultJoiner, MovieRatingResultJoiner, UserAggregateSubStreamsJoiner}
 import com.kaczmarek.bigdata.operator.mapper._
 import com.kaczmarek.bigdata.operator.predicate.{CurrentMovieRatingUserAggregatePredicate, TruePredicate}
 import com.kaczmarek.bigdata.operator.reducer.{AnomalyAggregateReducer, MovieRatingReducer, MovieRatingUserAggregateReducer, NoOpReducer}
@@ -12,7 +12,7 @@ import com.kaczmarek.bigdata.schema.SchemaKeyValueWrapper
 import com.kaczmarek.bigdata.serde.CustomSerdes
 import com.kaczmarek.bigdata.serde.CustomSerdes._
 import org.apache.kafka.streams.Topology
-import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
+import org.apache.kafka.streams.kstream.{JoinWindows, TimeWindows, Windowed}
 import org.apache.kafka.streams.scala.ImplicitConversions._
 import org.apache.kafka.streams.scala.Serdes._
 import org.apache.kafka.streams.scala.kstream._
@@ -26,8 +26,6 @@ object KafkaTopologyCreator {
     val MOVIE_TITLES_TOPIC: String = "movie-titles"
     val ETL_RESULT_TOPIC: String = "movie-ratings"
     val ANOMALY_RESULT_TOPIC: String = "popular-movies"
-
-    val MAPPED_MOVIE_RATING_VOTES_TOPIC: String = "mapped-movie-rating-votes"
 
     def createTopology(params: Params): Topology = {
         val builder = new StreamsBuilder
@@ -106,9 +104,10 @@ object KafkaTopologyCreator {
 
         val movieRatingUserAggregatesMergedTable: KTable[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
             movieRatingUserAggregatesSubStreams(0)
-                .merge(movieRatingUserAggregatesSubStreams(1))
+                .outerJoin(movieRatingUserAggregatesSubStreams(1))(
+                    new UserAggregateSubStreamsJoiner, JoinWindows.of(Duration.ofSeconds(10)))
                 .groupByKey
-                .reduce(new MovieRatingUserAggregateReducer)
+                .reduce(new NoOpReducer[MovieRatingUserAggregateValue])
 
         val movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] =
             movieRatingUserAggregatesMergedTable
@@ -126,11 +125,11 @@ object KafkaTopologyCreator {
         val movieRatingVoteUserAggregatesSubStream: KStream[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue] =
             movieRatingUserAggregatesSubStream
                 .groupByKey
-                .windowedBy(TimeWindows.of(windowDuration))
+                .windowedBy(TimeWindows.of(windowDuration)
+                    .grace(Duration.ofMillis(0)))
                 .reduce(new MovieRatingUserAggregateReducer)
-                .suppress(Suppressed
-                    .untilTimeLimit[Windowed[MovieRatingUserAggregateKey]](
-                        windowDuration, Suppressed.BufferConfig.unbounded()))
+                .suppress(Suppressed.untilWindowCloses[MovieRatingUserAggregateKey](
+                    Suppressed.BufferConfig.unbounded()))
                 .toStream
                 .map(new UnwindowKeyMapper[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue])
 

@@ -12,5 +12,5 @@ for file in `ls -v $source_dir/*`; do
   echo $file
   filename=`basename $file`
   cp $file $target_dir/$filename
-  sleep 10
+  sleep 100
 done

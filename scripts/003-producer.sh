@@ -25,12 +25,6 @@ cat > ~/connect-standalone.properties <<EOL
 bootstrap.servers=${CLUSTER_NAME}-w-0:9092
 key.converter=org.apache.kafka.connect.storage.StringConverter
 value.converter=org.apache.kafka.connect.storage.StringConverter
-key.converter.schemas.enable=true
-value.converter.schemas.enable=true
-internal.key.converter=org.apache.kafka.connect.storage.StringConverter
-internal.value.converter=org.apache.kafka.connect.storage.StringConverter
-internal.key.converter.schemas.enable=false
-internal.value.converter.schemas.enable=false
 offset.storage.file.filename=/tmp/connect.offsets
 offset.flush.interval.ms=10000
 plugin.path=/tmp/kafka

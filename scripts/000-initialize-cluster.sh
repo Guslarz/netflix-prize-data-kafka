@@ -26,9 +26,8 @@ done
 
 docker pull mysql/mysql-server:latest
 docker run --name=kafka-mysql -p8081:3306 -e MYSQL_ROOT_PASSWORD=password -d mysql/mysql-server:latest
-docker exec -it kafka-mysql bash <<EOL
-mysql -u root -p
-password
+docker exec -i kafka-mysql bash <<EOL
+mysql -u root -ppassword -e "
 
 UPDATE mysql.user SET host = '%' WHERE user='root';
 
@@ -55,5 +54,5 @@ CREATE TABLE popular_movies(
     ratingAverage DOUBLE(3, 2),
     PRIMARY KEY(movieId, windowStart, windowEnd)
 );
-
+"
 EOL
