@@ -1,18 +1,21 @@
 {
   "name": "anomaly-result-key",
-  "type": "object",
-  "properties": [
+  "type": "struct",
+  "fields": [
     {
-      "name": "movieId",
-      "type": "number"
+      "field": "movieId",
+      "type": "int64",
+      "optional": false
     },
     {
-      "name": "windowStart",
-      "type": "string"
+      "field": "windowStart",
+      "type": "string",
+      "optional": false
     },
     {
-      "name": "windowEnd",
-      "type": "string"
+      "field": "windowEnd",
+      "type": "string",
+      "optional": false
     }
   ]
 }

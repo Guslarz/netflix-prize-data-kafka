@@ -25,12 +25,13 @@ done
 # initialize database
 
 docker pull mysql/mysql-server:latest
-docker run --name=kafka-mysql -p8081:3306 -e MYSQL_ROOT_PASSWORD=password -d mysql/mysql-server:latest
-docker exec -i kafka-mysql bash <<EOL
-mysql -u root -ppassword -e "
-
-UPDATE mysql.user SET host = '%' WHERE user='root';
-
+docker run --name=kafka-mysql -p8080:3306 \
+  -e MYSQL_ROOT_PASSWORD=password \
+  -e MYSQL_ROOT_HOST=% \
+  -d mysql/mysql-server:latest
+echo "Wait..."
+sleep 30
+mysql -h 127.0.0.1 -P 8080 -u root -ppassword <<EOL
 CREATE DATABASE netflix_prize_data;
 
 USE netflix_prize_data;
@@ -54,5 +55,10 @@ CREATE TABLE popular_movies(
     ratingAverage DOUBLE(3, 2),
     PRIMARY KEY(movieId, windowStart, windowEnd)
 );
-"
 EOL
+
+
+# copy log4j config
+
+sudo cp /usr/lib/kafka/config/tools-log4j.properties \
+  /usr/lib/kafka/config/connect-log4j.properties

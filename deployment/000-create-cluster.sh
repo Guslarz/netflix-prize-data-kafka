@@ -23,8 +23,8 @@ gcloud beta dataproc clusters create ${CLUSTER_NAME} \
     --initialization-actions \
     gs://goog-dataproc-initialization-actions-${REGION}/kafka/kafka.sh
 
-# launch 5 terminals
+# launch 4 terminals
 #   - server terminal
-#   - 2 consumers terminals
+#   - consumer terminal
 #   - producer terminal
 #   - streaming terminal

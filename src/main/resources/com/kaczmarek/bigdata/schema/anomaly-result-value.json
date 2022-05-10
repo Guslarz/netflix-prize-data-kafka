@@ -1,18 +1,21 @@
 {
   "name": "anomaly-result-value",
-  "type": "object",
-  "properties": [
+  "type": "struct",
+  "fields": [
     {
-      "name": "title",
-      "type": "string"
+      "field": "title",
+      "type": "string",
+      "optional": false
     },
     {
-      "name": "voteCount",
-      "type": "number"
+      "field": "voteCount",
+      "type": "int64",
+      "optional": false
     },
     {
-      "name": "ratingAverage",
-      "type": "number"
+      "field": "ratingAverage",
+      "type": "double",
+      "optional": false
     }
   ]
 }

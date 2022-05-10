@@ -1,14 +1,16 @@
 {
   "name": "movie-rating-result-key",
-  "type": "object",
-  "properties": [
+  "type": "struct",
+  "fields": [
     {
-      "name": "movieId",
-      "type": "number"
+      "field": "movieId",
+      "type": "int64",
+      "optional": false
     },
     {
-      "name": "yearMonth",
-      "type": "string"
+      "field": "yearMonth",
+      "type": "string",
+      "optional": false
     }
   ]
 }
