@@ -17,5 +17,6 @@
       "type": "double",
       "optional": false
     }
-  ]
+  ],
+  "optional": false
 }

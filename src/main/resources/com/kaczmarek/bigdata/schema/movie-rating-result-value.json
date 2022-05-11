@@ -18,9 +18,10 @@
       "optional": false
     },
     {
-      "field": "uniqueVoteCount",
+      "field": "uniqueVoterCount",
       "type": "int64",
       "optional": false
     }
-  ]
+  ],
+  "optional": false
 }

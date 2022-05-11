@@ -10,7 +10,7 @@ ANOMALY_TOPIC=popular-movies
 CONNECTION_URL="jdbc:mysql://127.0.0.1:8080/netflix_prize_data?verifyServerCertificate=false&useSSL=true&requireSSL=true"
 CONNECTION_USER=root
 CONNECTION_PASSWORD=password
-ETL_TABLE=movie_rating_votes
+ETL_TABLE=movie_ratings
 ANOMALY_TABLE=popular_movies
 
 
@@ -45,6 +45,15 @@ offset.flush.interval.ms=10000
 plugin.path=/tmp/kafka
 rest.port=8083
 EOL
+
+/usr/lib/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server ${CLUSTER_NAME}-w-0:9092 \
+  --topic $ETL_TOPIC --from-beginning \
+  --formatter kafka.tools.DefaultMessageFormatter \
+  --property print.key=true \
+  --property print.value=true \
+  --property key.converter=org.apache.kafka.connect.json.JsonConverter \
+  --property value.converter=org.apache.kafka.connect.json.JsonConverter
 
 cat > ~/connect-etl-sink.properties <<EOL
 name=etl-sink

@@ -36,7 +36,7 @@ CREATE DATABASE netflix_prize_data;
 
 USE netflix_prize_data;
 
-CREATE TABLE movie_rating_votes(
+CREATE TABLE movie_ratings(
   movieId INT NOT NULL,
   yearMonth CHAR(7) NOT NULL,
   title VARCHAR(255) NOT NULL,
