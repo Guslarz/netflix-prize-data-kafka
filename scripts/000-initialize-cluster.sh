@@ -38,7 +38,7 @@ USE netflix_prize_data;
 
 CREATE TABLE movie_ratings(
   movieId INT NOT NULL,
-  yearMonth CHAR(7) NOT NULL,
+  yearMonth CHAR(8) NOT NULL,
   title VARCHAR(255) NOT NULL,
   voteCount INT NOT NULL,
   ratingSum INT NOT NULL,
@@ -48,8 +48,8 @@ CREATE TABLE movie_ratings(
 
 CREATE TABLE popular_movies(
     movieId INT,
-    windowStart CHAR(10),
-    windowEnd CHAR(10),
+    windowStart CHAR(11),
+    windowEnd CHAR(11),
     title VARCHAR(255),
     voteCount INT,
     ratingAverage DOUBLE(3, 2),

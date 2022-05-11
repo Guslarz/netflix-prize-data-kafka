@@ -135,7 +135,7 @@ class KafkaTopologyCreatorTest {
             testDriver.readOutput[MessageWithSchema[K], MessageWithSchema[V]](
                 topic, keyDeserializer, valueDeserializer)
         while (record != null) {
-            println(s"${record.key()} ${record.value()}")
+            println(s"${record.key().payload} ${record.value().payload}")
             result.put(record.key().payload, record.value().payload)
             record = testDriver.readOutput[MessageWithSchema[K], MessageWithSchema[V]](
                 topic, keyDeserializer, valueDeserializer)

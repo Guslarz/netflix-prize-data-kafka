@@ -46,15 +46,6 @@ plugin.path=/tmp/kafka
 rest.port=8083
 EOL
 
-/usr/lib/kafka/bin/kafka-console-consumer.sh \
-  --bootstrap-server ${CLUSTER_NAME}-w-0:9092 \
-  --topic $ETL_TOPIC --from-beginning \
-  --formatter kafka.tools.DefaultMessageFormatter \
-  --property print.key=true \
-  --property print.value=true \
-  --property key.converter=org.apache.kafka.connect.json.JsonConverter \
-  --property value.converter=org.apache.kafka.connect.json.JsonConverter
-
 cat > ~/connect-etl-sink.properties <<EOL
 name=etl-sink
 connector.class=io.confluent.connect.jdbc.JdbcSinkConnector

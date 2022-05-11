@@ -17,11 +17,7 @@ for source_file in `ls -v $source_dir/*`; do
   echo $source_file
   source_basename=`basename $source_file`
 
-  head -n 1000 $source_file > $tmp_dir/$source_basename
-
-  cd $tmp_dir
-  split -l 1000 $source_basename $source_basename.
-  rm $source_basename
+  split -l 1000 $source_file ${tmp_dir}/${source_basename}.
 
   for part in `ls -v $tmp_dir/*`; do
     part_basename=`basename $part`
