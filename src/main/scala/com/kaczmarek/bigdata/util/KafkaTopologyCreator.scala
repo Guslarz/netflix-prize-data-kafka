@@ -97,7 +97,7 @@ object KafkaTopologyCreator {
                     new TruePredicate[MovieRatingUserAggregateKey, MovieRatingUserAggregateValue]
                 )
                 .zip(List(
-                    Duration.ofHours(1),
+                    Duration.ofDays(1),
                     Duration.ofSeconds(10)
                 ))
                 .map(pair => aggregateMovieRatingUserAggregateSubStream(pair._1, pair._2))

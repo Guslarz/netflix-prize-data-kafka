@@ -155,7 +155,7 @@ object KafkaTopologyCreatorTest {
             System.currentTimeMillis() + (consumerRecord.value() match {
                 case value: MovieRatingVote =>
                     if (value.movieId == -1) {
-                        Duration.ofHours(1).toMillis
+                        Duration.ofDays(1).toMillis
                     } else {
                         0L
                     }
