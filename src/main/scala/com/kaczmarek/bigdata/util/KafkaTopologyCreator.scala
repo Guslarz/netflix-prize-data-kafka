@@ -98,7 +98,7 @@ object KafkaTopologyCreator {
                 )
                 .zip(List(
                     Duration.ofHours(1),
-                    Duration.ofSeconds(10),
+                    Duration.ofSeconds(10)
                 ))
                 .map(pair => aggregateMovieRatingUserAggregateSubStream(pair._1, pair._2))
 
@@ -107,7 +107,7 @@ object KafkaTopologyCreator {
                 .outerJoin(movieRatingUserAggregatesSubStreams(1))(
                     new UserAggregateSubStreamsJoiner, JoinWindows.of(Duration.ofSeconds(10)))
                 .groupByKey
-                .reduce(new NoOpReducer[MovieRatingUserAggregateValue])
+                .reduce(new MovieRatingUserAggregateReducer)
 
         val movieRatingVoteAggregatesTable: KTable[MovieRatingAggregateKey, MovieRatingAggregateValue] =
             movieRatingUserAggregatesMergedTable

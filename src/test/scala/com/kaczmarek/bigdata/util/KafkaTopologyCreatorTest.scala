@@ -49,27 +49,8 @@ class KafkaTopologyCreatorTest {
                 testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC, expectedEtlInputStream)
             verifyOutput[AnomalyResultKey, AnomalyResultValue](
                 testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC, expectedAnomalyInputStream)
-            //                        println(KafkaTopologyCreator.ETL_RESULT_TOPIC)
-            //                        printRecords[MovieRatingResultKey, MovieRatingResultValue](testDriver, KafkaTopologyCreator.ETL_RESULT_TOPIC)
-            //                        println()
-            //                        println(KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
-            //                        printRecords[AnomalyResultKey, AnomalyResultValue](testDriver, KafkaTopologyCreator.ANOMALY_RESULT_TOPIC)
         } finally {
             testDriver.close()
-        }
-    }
-
-    private def printRecords[K, V](testDriver: TopologyTestDriver, topic: String)
-                                  (implicit k: ClassTag[K], v: ClassTag[V]): Unit = {
-        var continue = true
-        while (continue) {
-            val record: ProducerRecord[K, V] =
-                testDriver.readOutput(topic, new JsonDeserializer[K], new JsonDeserializer[V])
-            if (record == null) {
-                continue = false
-            } else {
-                println(s"${record.key()} ${record.value()}")
-            }
         }
     }
 
