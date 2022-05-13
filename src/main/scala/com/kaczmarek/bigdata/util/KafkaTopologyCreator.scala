@@ -177,6 +177,7 @@ object KafkaTopologyCreator {
                 .grace(Duration.ofDays(1)))
             .reduce(new AnomalyAggregateReducer)(Materialized.`with`(Serdes.Integer, CustomSerdes.anomalyAggregate)
                 .withRetention(Duration.ofDays(params.anomalyWindowDuration + 1)))
+            .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
 
         val anomalyResultsWithoutTitleStream: KStream[Windowed[Int], AnomalyResultWithoutTitle] = anomalyAggregateTable
             .toStream

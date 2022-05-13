@@ -40,7 +40,7 @@ class KafkaTopologyCreatorTest {
         pipeInput(testDriver, KafkaTopologyCreator.MOVIE_TITLES_TOPIC, titlesInputStream, None)
         pipeInput(
             testDriver, KafkaTopologyCreator.MOVIE_RATING_VOTES_TOPIC, votesInputStream,
-            Some("2000-01-01,-1,0,0") // dummy input to handle suppression
+            Some("2022-05-12,-1,0,0") // dummy input to handle suppression
         )
 
         // then
