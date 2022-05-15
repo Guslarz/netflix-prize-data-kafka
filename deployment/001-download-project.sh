@@ -15,7 +15,7 @@ hadoop fs -copyToLocal gs://${BUCKET_NAME}/project01/netflix-prize-data.zip
 hadoop fs -copyToLocal gs://${BUCKET_NAME}/project01/netflix-prize-data-executables.zip
 
 #unzip netflix-prize-data-input.zip
-unzip -j netflix-prize-data.zip -d ~/ratings
+unzip netflix-prize-data.zip
 unzip netflix-prize-data-executables.zip
 
 
